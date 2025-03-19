@@ -28,11 +28,14 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     // from mismatched header versions.
     std::string const HASH = __hyprland_api_get_hash();
     if (HASH != GIT_COMMIT_HASH) {
-        HyprlandAPI::addNotification(
+        HyprlandAPI::addNotificationV2(
             deco::g_handle,
-            "[deco] Mismatched headers! Can't proceed.",
-            Colors::RED,
-            5000);
+            {
+                { "text", "[deco] Mismatched headers! Can't proceed."},
+                { "time",                                        5000},
+                {"color",                                           0},
+                { "icon",                                  ICON_ERROR}
+        });
         throw std::runtime_error("[deco] Version mismatch");
     }
 
@@ -41,15 +44,29 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 
     deco::log("Add bars to existing windows");
     for (auto w : g_pCompositor->m_vWindows) {
-        deco::bar::g_factory.createFor(w);
+        try {
+            deco::bar::g_factory.createFor(w);
+        } catch (std::runtime_error const& e) {
+            HyprlandAPI::addNotificationV2(
+                deco::g_handle,
+                {
+                    { "text",   e.what()},
+                    { "time",       5000},
+                    {"color",          0},
+                    { "icon", ICON_ERROR}
+            });
+        }
     }
 
     deco::log("Initialization complete");
-    HyprlandAPI::addNotification(
+    HyprlandAPI::addNotificationV2(
         deco::g_handle,
-        "[deco] Initialized successfully.",
-        Colors::GREEN,
-        2500);
+        {
+            { "text", "[deco] Initialized successfully."},
+            { "time",                               5000},
+            {"color",                                  0},
+            { "icon",                            ICON_OK}
+    });
 
     return {
         .name = "deco",

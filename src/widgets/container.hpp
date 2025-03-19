@@ -23,12 +23,8 @@ inline static Direction getDirection()
     std::string const side{deco::config::buttons::side::get()};
     if (side == "left") {
         return LTR;
-    } else if (side == "right") {
-        return RTL;
     } else {
-        throw std::runtime_error{std::format(
-            "[deco] Invalid buttons:side value \"{}\", defaulting to \"right\"",
-            side)};
+        return RTL;
     }
 }
 

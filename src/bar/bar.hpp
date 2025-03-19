@@ -6,6 +6,8 @@
 
 namespace deco::bar {
 
+struct EventCallbacks;
+
 class Bar : public IHyprWindowDecoration {
 public:
     struct Drag {
@@ -51,6 +53,8 @@ public:
 
     double getCenterline() const;
 
+    UP<EventCallbacks> cbs{};
+
 private:
     bool m_was_button_clicked{false};
     bool m_was_clicked{false};
@@ -63,12 +67,13 @@ private:
 
 class Factory {
 public:
-    WP<Bar> createFor(PHLWINDOW window);
+    Factory();
 
-    auto& bars() const { return m_bars; }
+    WP<Bar> createFor(PHLWINDOW window);
+    void removeBar(PHLWINDOW window);
 
 private:
-    std::vector<WP<Bar>> m_bars{};
+    SP<HOOK_CALLBACK_FN> ptr_openWindow;
 };
 
 inline Factory g_factory{};
