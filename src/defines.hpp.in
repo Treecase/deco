@@ -1,0 +1,6 @@
+#pragma once
+
+// clang-format off
+#define DECO_PLUGIN_DESCRIPTION "@CMAKE_PROJECT_DESCRIPTION@"
+#define DECO_PLUGIN_AUTHOR      "@DECO_AUTHOR@"
+#define DECO_PLUGIN_VERSION     "@CMAKE_PROJECT_VERSION@"

@@ -1,0 +1,9 @@
+[repository]
+name = "deco"
+authors = ["Treecase"]
+
+[deco]
+description = "Window bars for Hyprland."
+authors = ["Treecase"]
+output = "build/libdeco.so"
+build = ["make all"]
