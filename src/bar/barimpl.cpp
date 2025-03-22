@@ -1,12 +1,13 @@
 #include <cassert>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
+#include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 
 #include "bar/bar.hpp"
 #include "config/config.hpp"
-#include "hyprland/src/plugins/PluginAPI.hpp"
 #include "include.hpp"
 #include "widgets/button.hpp"
 #include "widgets/container.hpp"
@@ -136,6 +137,13 @@ void Bar::endDrag()
     m_is_dragged = false;
     g_pKeybindManager->m_mDispatchers["mouse"]("0movewindow");
     deco::log("Drag ended on {}", m_window.lock());
+}
+
+void Bar::hide(bool hide)
+{
+    m_is_hidden = hide;
+    deco::log("Bar for {} {}", m_window.lock(), hide ? "hidden" : "unhidden");
+    g_pDecorationPositioner->repositionDeco(this);
 }
 
 // Private Helpers

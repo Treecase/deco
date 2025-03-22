@@ -1,6 +1,7 @@
 [repository]
 name = "deco"
 authors = ["Treecase"]
+version = "0.3.1"
 
 [deco]
 description = "Window bars for Hyprland."
