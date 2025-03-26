@@ -15,19 +15,19 @@ static Hyprlang::CParseResult kw_addButton(char const *k, char const *v);
 
 void deco::config::init_keywords()
 {
-    deco::log("Register config keywords");
     HyprlandAPI::addConfigKeyword(
         deco::g_handle,
         "addButton",
         kw_addButton,
         Hyprlang::SHandlerOptions{});
+    deco::log("Registered keywords");
 }
 
 //// KEYWORD HANDLERS /////////////////////////////////////////////////////////
 
 static Hyprlang::CParseResult kw_addButton(char const *k, char const *v)
 {
-    deco::log("keyword addButton");
+    deco::log("Keyword 'addButton' triggered");
     CVarList vars{v};
     auto it = vars.begin();
     auto x = it->empty();

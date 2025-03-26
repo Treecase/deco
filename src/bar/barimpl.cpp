@@ -25,12 +25,19 @@ bool Bar::onMouseButton(IPointer::SButtonEvent event)
     for (auto const& btn : positionButtons(m_assignedBox.size())) {
         auto btn_box = btn.box();
         bool const is_hovered = btn_box.containsPoint(pointer);
-        if (is_hovered && event.state == WL_POINTER_BUTTON_STATE_PRESSED) {
-            m_was_button_clicked = true;
-            g_pHyprRenderer->damageBox(
-                btn_box.translate(getAssignedBoxInGlobalSpace().pos()));
-            m_last_click_pos = pointer;
-            btn.model.exec();
+        if (is_hovered) {
+            switch (event.state) {
+            case WL_POINTER_BUTTON_STATE_PRESSED:
+                m_was_button_clicked = true;
+                m_last_click_pos = pointer;
+                damageEntire();
+                break;
+            case WL_POINTER_BUTTON_STATE_RELEASED:
+                m_was_button_clicked = false;
+                btn.model.exec();
+                damageEntire();
+                break;
+            }
             return false;
         }
     }
@@ -39,6 +46,7 @@ bool Bar::onMouseButton(IPointer::SButtonEvent event)
     case WL_POINTER_BUTTON_STATE_PRESSED:
         if (isMouseInside()) {
             m_was_clicked = true;
+            startDrag();
             return true;
         }
         break;
@@ -64,7 +72,7 @@ bool Bar::onMouseMove(Vector2D pointer_global)
         updateDrag();
     }
     // User is initiating a drag.
-    else if (m_was_clicked) {
+    else if (m_was_clicked && !m_is_dragged) {
         startDrag();
     } else if (!m_was_button_clicked) {
         // Check if the mouse has entered or exited a button, and redraw it if
@@ -74,8 +82,7 @@ bool Bar::onMouseMove(Vector2D pointer_global)
             bool const is_hovered = btn_box.containsPoint(pointer);
             bool const was_hovered = btn_box.containsPoint(m_last_mouse_pos);
             if (is_hovered != was_hovered) {
-                g_pHyprRenderer->damageBox(
-                    btn_box.translate(getAssignedBoxInGlobalSpace().pos()));
+                damageEntire();
             }
         }
     }
@@ -102,7 +109,7 @@ void Bar::render() const
 
     // Draw the bar.
     g_pHyprOpenGL->renderRect(
-        barrect,
+        barrect.expand(mon->scale * 1.0).round(),
         config::bar::fill_color::get(),
         rounding,
         win->roundingPower());
@@ -141,9 +148,19 @@ void Bar::endDrag()
 
 void Bar::hide(bool hide)
 {
+    if (hide == m_is_hidden) {
+        return;
+    }
     m_is_hidden = hide;
     deco::log("Bar for {} {}", m_window.lock(), hide ? "hidden" : "unhidden");
     g_pDecorationPositioner->repositionDeco(this);
+}
+
+bool Bar::isVisible() const
+{
+    return validMapped(m_window)
+        && m_window->m_sWindowData.decorate.valueOrDefault()
+        && !m_window->m_bX11DoesntWantBorders && !m_is_hidden;
 }
 
 // Private Helpers
@@ -169,7 +186,7 @@ CBox Bar::getAssignedBoxInGlobalSpace() const
 CBox Bar::getFullRenderArea() const
 {
     auto box = getAssignedBoxInGlobalSpace();
-    box.height += m_window->rounding();
+    box.height += 2 * m_window->rounding();
     return box;
 }
 

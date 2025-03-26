@@ -2,6 +2,7 @@
 #include <expected>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 
 #include "bar.hpp"
 #include "bar/bar.hpp"
@@ -16,7 +17,9 @@ static void cb_mouseButton(
     deco::bar::Bar *bar)
 {
     auto const event = std::any_cast<IPointer::SButtonEvent>(data);
-    info.cancelled = bar->onMouseButton(event);
+    if (bar->isVisible()) {
+        info.cancelled |= bar->onMouseButton(event);
+    }
 }
 
 static void cb_mouseMove(
@@ -26,7 +29,9 @@ static void cb_mouseMove(
     deco::bar::Bar *bar)
 {
     auto const mouse_pos = std::any_cast<Vector2D>(data);
-    info.cancelled = bar->onMouseMove(mouse_pos);
+    if (bar->isVisible()) {
+        info.cancelled |= bar->onMouseMove(mouse_pos);
+    }
 }
 
 static void cb_windowUpdateRules(
@@ -35,25 +40,21 @@ static void cb_windowUpdateRules(
     std::any data,
     deco::bar::Bar *bar)
 {
-    auto const window = std::any_cast<PHLWINDOW>(data);
-    deco::log("windowUpdateRules {}", window);
-
-    auto const bar_win = bar->m_window.lock();
+    PHLWINDOW const window = std::any_cast<PHLWINDOW>(data);
+    PHLWINDOW const bar_win = bar->m_window.lock();
     if (bar_win != window) {
-        deco::log("bar_win {} is not {}", bar_win, window);
         return;
     }
 
-    deco::log("Window rules updated for {}", window);
-
-    auto const rules = bar_win->m_vMatchedRules;
-    for (auto const& rule : rules) {
+    bool hide_bar = false;
+    for (auto const& rule : bar_win->m_vMatchedRules) {
         if (rule->szRule == "plugin:deco:nobar") {
-            bar->hide(!bar->isHidden());
+            hide_bar = true;
+            deco::log("{} matched rule plugin:deco:nobar", window);
         }
     }
-
-    window->updateWindowDecos();
+    bar->hide(hide_bar);
+    bar_win->updateWindowDecos();
 }
 
 struct deco::bar::EventCallbacks {
@@ -98,9 +99,7 @@ cb_openWindow(void *self, SCallbackInfo& info, std::any data, Factory *factory)
 
     auto const e = factory->createFor(window);
     if (e.error_or(Err::DoesntWantDecorations) != Err::DoesntWantDecorations) {
-        deco::notify(
-            std::format("Failed to create deco for {}", window),
-            ICON_ERROR);
+        deco::log(ERR, "Failed to create deco for {}", window);
     }
 }
 

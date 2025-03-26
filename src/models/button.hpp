@@ -6,6 +6,8 @@
 #include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
+#include "include.hpp"
+
 namespace deco {
 
 struct ButtonModel {
@@ -27,8 +29,9 @@ struct ButtonModel {
 
     void exec() const
     {
-        auto x = g_pKeybindManager->m_mDispatchers.at("exec");
-        std::invoke(x, action);
+        deco::log("exec button action '{}'", action);
+        auto dispatch_exec = g_pKeybindManager->m_mDispatchers.at("exec");
+        std::invoke(dispatch_exec, action);
     }
 };
 

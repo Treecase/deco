@@ -13,17 +13,17 @@ VALUE(bar, fill_color, Hyprlang::INT, 0xff11111b);
 VALUE(buttons, side, Hyprlang::STRING, "right");
 VALUE(buttons, spacing, Hyprlang::INT, 8);
 VALUE(buttons, padding, Hyprlang::INT, 8);
+#undef VALUE
 
 void init_values();
 void init_keywords();
 
 inline static void init()
 {
+    deco::log("Initializing config");
     init_values();
     init_keywords();
     HyprlandAPI::reloadConfig();
 }
 
 } // namespace deco::config
-
-#undef VALUE

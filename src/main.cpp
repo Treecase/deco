@@ -37,15 +37,13 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     deco::config::init();
     deco::events::init();
 
-    deco::log("Add bars to existing windows");
+    deco::log("Adding bars to existing windows");
     for (auto w : g_pCompositor->m_vWindows) {
         using Err = deco::bar::Factory::CreateForError;
         auto const d = deco::bar::g_factory.createFor(w);
         auto const e = d.error_or(Err::DoesntWantDecorations);
         if (e != Err::DoesntWantDecorations) {
-            deco::notify(
-                std::format("Failed to create deco for {}: {}", w, e),
-                ICON_ERROR);
+            deco::log(ERR, "Failed to create deco for {}: {}", w, e);
         }
     }
 

@@ -20,6 +20,16 @@ inline void log(std::format_string<Args...> const& str, Args... args)
         std::vformat(str.get(), std::make_format_args(args...)));
 }
 
+template<class... Args>
+inline void
+log(eLogLevel level, std::format_string<Args...> const& str, Args... args)
+{
+    Debug::log(
+        level,
+        "[deco] {}",
+        std::vformat(str.get(), std::make_format_args(args...)));
+}
+
 inline void notify(
     std::string const& text,
     eIcons icon,

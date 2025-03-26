@@ -22,8 +22,9 @@ Bar::Bar(PHLWINDOW win)
 
 SDecorationPositioningInfo Bar::getPositioningInfo()
 {
-    static constexpr uint32_t HYPRLAND_BORDER_PRIORITY =
-        10000; // Hardcoded in Hyprland.
+    // Border priority is hardcoded in
+    // hyprland/src/render/decorations/CHyprBorderDecoration.cpp.
+    static constexpr uint32_t HYPRLAND_BORDER_PRIORITY = 10000;
     double const height = isHidden() ? 0 : g_barmodel.height();
     return {
         .policy = DECORATION_POSITION_STICKY,
@@ -41,12 +42,9 @@ void Bar::onPositioningReply(SDecorationPositioningReply const& reply)
 
 void Bar::draw(PHLMONITOR monitor, float const& a)
 {
-    auto const wants_decorations =
-        m_window->m_sWindowData.decorate.valueOrDefault();
-    if (!validMapped(m_window) || !wants_decorations || m_is_hidden) {
-        return;
+    if (isVisible()) {
+        g_pHyprRenderer->m_sRenderPass.add(makeShared<RenderPass>(this));
     }
-    g_pHyprRenderer->m_sRenderPass.add(makeShared<RenderPass>(this));
 }
 
 eDecorationType Bar::getDecorationType()
@@ -56,7 +54,6 @@ eDecorationType Bar::getDecorationType()
 
 void Bar::updateWindow(PHLWINDOW)
 {
-    damageEntire();
     g_pDecorationPositioner->repositionDeco(this);
 }
 

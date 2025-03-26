@@ -15,7 +15,7 @@ static void cb_preConfigReload(void *self, SCallbackInfo& info, std::any data);
 
 void deco::events::init()
 {
-    deco::log("Register event callbacks");
+    deco::log("Registering event callbacks");
     ptr_preConfigReload = HyprlandAPI::registerCallbackDynamic(
         deco::g_handle,
         "preConfigReload",
@@ -27,6 +27,6 @@ void deco::events::init()
 
 static void cb_preConfigReload(void *self, SCallbackInfo& info, std::any data)
 {
-    deco::log("Config reloading...");
+    deco::log("Config reload");
     deco::g_barmodel.buttons.clear();
 }

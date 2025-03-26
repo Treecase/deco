@@ -44,6 +44,8 @@ public:
 
     bool isHidden() const { return m_is_hidden; }
 
+    bool isVisible() const;
+
     // Event Handlers
     bool onMouseButton(IPointer::SButtonEvent);
     bool onMouseMove(Vector2D);
