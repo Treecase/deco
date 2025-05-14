@@ -38,7 +38,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     deco::events::init();
 
     deco::log("Adding bars to existing windows");
-    for (auto w : g_pCompositor->m_vWindows) {
+    for (auto w : g_pCompositor->m_windows) {
         using Err = deco::bar::Factory::CreateForError;
         auto const d = deco::bar::g_factory.createFor(w);
         auto const e = d.error_or(Err::DoesntWantDecorations);

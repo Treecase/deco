@@ -54,6 +54,7 @@ public:
     CBox getAssignedBoxInGlobalSpace() const;
     CBox getFullRenderArea() const;
     bool isMouseInside() const;
+    bool isEventValid() const;
 
     Vector2D getMouseRelative() const;
     Vector2D getGlobalPointRelative(Vector2D const& point) const;

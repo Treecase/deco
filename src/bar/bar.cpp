@@ -43,7 +43,7 @@ void Bar::onPositioningReply(SDecorationPositioningReply const& reply)
 void Bar::draw(PHLMONITOR monitor, float const& a)
 {
     if (isVisible()) {
-        g_pHyprRenderer->m_sRenderPass.add(makeShared<RenderPass>(this));
+        g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
     }
 }
 

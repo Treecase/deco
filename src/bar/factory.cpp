@@ -47,8 +47,8 @@ static void cb_windowUpdateRules(
     }
 
     bool hide_bar = false;
-    for (auto const& rule : bar_win->m_vMatchedRules) {
-        if (rule->szRule == "plugin:deco:nobar") {
+    for (auto const& rule : bar_win->m_matchedRules) {
+        if (rule->m_rule == "plugin:deco:nobar") {
             hide_bar = true;
             deco::log("{} matched rule plugin:deco:nobar", window);
         }
@@ -115,7 +115,7 @@ Factory::Factory()
 std::expected<WP<Bar>, Factory::CreateForError> Factory::createFor(
     PHLWINDOW window)
 {
-    if (window->m_bX11DoesntWantBorders) {
+    if (window->m_X11DoesntWantBorders) {
         deco::log("{} doesnt want decorations", window);
         return std::unexpected{CreateForError::DoesntWantDecorations};
     }

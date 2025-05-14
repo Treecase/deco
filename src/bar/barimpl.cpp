@@ -1,6 +1,8 @@
 #include <cassert>
+#include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
+#include <hyprland/src/managers/SeatManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
@@ -18,6 +20,9 @@ using namespace deco::bar;
 
 bool Bar::onMouseButton(IPointer::SButtonEvent event)
 {
+    if (!isEventValid()) {
+        return false;
+    }
     m_was_clicked = false;
     auto const pointer = getMouseRelative();
 
@@ -95,21 +100,21 @@ bool Bar::onMouseMove(Vector2D pointer_global)
 
 void Bar::render() const
 {
-    auto const mon = g_pHyprOpenGL->m_RenderData.pMonitor;
+    auto const mon = g_pHyprOpenGL->m_renderData.pMonitor;
     auto const win = m_window;
 
-    auto const rounding = m_window->rounding() * mon->scale;
+    auto const rounding = m_window->rounding() * mon->m_scale;
 
     // Bar rect in render space.
     auto barrect = getFullRenderArea()
-                       .translate(-mon->vecPosition)
-                       .translate(m_window->m_vFloatingOffset)
-                       .scale(mon->scale)
+                       .translate(-mon->m_position)
+                       .translate(m_window->m_floatingOffset)
+                       .scale(mon->m_scale)
                        .round();
 
     // Draw the bar.
     g_pHyprOpenGL->renderRect(
-        barrect.expand(mon->scale * 1.0).round(),
+        barrect.expand(mon->m_scale * 1.0).round(),
         config::bar::fill_color::get(),
         rounding,
         win->roundingPower());
@@ -120,7 +125,7 @@ void Bar::render() const
             btn.state =
                 m_was_button_clicked ? widget::CLICKED : widget::HOVERED;
         }
-        btn.render(barrect.pos(), mon->scale);
+        btn.render(barrect.pos(), mon->m_scale);
     }
 }
 
@@ -129,20 +134,20 @@ void Bar::render() const
 void Bar::startDrag()
 {
     deco::log("Drag started on {}", m_window.lock());
-    g_pKeybindManager->m_mDispatchers["mouse"]("0movewindow");
+    g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
     m_is_dragged = true;
 }
 
 void Bar::updateDrag()
 {
     assert(m_is_dragged);
-    g_pKeybindManager->m_mDispatchers["mouse"]("1movewindow");
+    g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
 }
 
 void Bar::endDrag()
 {
     m_is_dragged = false;
-    g_pKeybindManager->m_mDispatchers["mouse"]("0movewindow");
+    g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
     deco::log("Drag ended on {}", m_window.lock());
 }
 
@@ -159,8 +164,8 @@ void Bar::hide(bool hide)
 bool Bar::isVisible() const
 {
     return validMapped(m_window)
-        && m_window->m_sWindowData.decorate.valueOrDefault()
-        && !m_window->m_bX11DoesntWantBorders && !m_is_hidden;
+        && m_window->m_windowData.decorate.valueOrDefault()
+        && !m_window->m_X11DoesntWantBorders && !m_is_hidden;
 }
 
 // Private Helpers
@@ -172,12 +177,12 @@ CBox Bar::getAssignedBoxInGlobalSpace() const
         DECORATION_EDGE_TOP,
         m_window.lock()));
 
-    auto const workspace = m_window->m_pWorkspace;
+    auto const workspace = m_window->m_workspace;
     if (!workspace) {
         return box;
     }
-    auto const workspace_offset = (workspace && !m_window->m_bPinned)
-        ? workspace->m_vRenderOffset->value()
+    auto const workspace_offset = (workspace && !m_window->m_pinned)
+        ? workspace->m_renderOffset->value()
         : Vector2D();
 
     return box.translate(workspace_offset);
@@ -195,6 +200,17 @@ bool Bar::isMouseInside() const
     auto const cursor_pos = g_pInputManager->getMouseCoordsInternal();
     auto const box = getAssignedBoxInGlobalSpace();
     return box.containsPoint(cursor_pos);
+}
+
+bool Bar::isEventValid() const {
+    if (!m_window->m_workspace || !m_window->m_workspace->isVisible() || !g_pInputManager->m_exclusiveLSes.empty() || (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_window->m_wlSurface->resource()))) {
+        return false;
+    }
+    auto const window_at_cursor = g_pCompositor->vectorToWindowUnified(g_pInputManager->getMouseCoordsInternal(), RESERVED_EXTENTS | INPUT_EXTENTS | ALLOW_FLOATING);
+    if (!window_at_cursor != m_window && m_window != g_pCompositor->m_lastWindow) {
+        return false;
+    }
+    return true;
 }
 
 Vector2D Bar::getMouseRelative() const

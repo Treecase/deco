@@ -30,7 +30,7 @@ struct ButtonModel {
     void exec() const
     {
         deco::log("exec button action '{}'", action);
-        auto dispatch_exec = g_pKeybindManager->m_mDispatchers.at("exec");
+        auto dispatch_exec = g_pKeybindManager->m_dispatchers.at("exec");
         std::invoke(dispatch_exec, action);
     }
 };
