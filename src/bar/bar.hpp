@@ -4,6 +4,7 @@
 #include <hyprland/src/helpers/memory/Memory.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
+#include <hyprutils/math/Vector2D.hpp>
 
 namespace deco::bar {
 
@@ -22,17 +23,21 @@ public:
     explicit Bar(PHLWINDOW);
     virtual ~Bar() = default;
 
-    // IHyprWindowDecoration Overrides
+    // IHyprWindowDecoration //////////////////////////////////////////////////
     virtual SDecorationPositioningInfo getPositioningInfo() override;
     virtual void onPositioningReply(
         SDecorationPositioningReply const& reply) override;
     virtual void draw(PHLMONITOR, float const& a) override;
     virtual eDecorationType getDecorationType() override;
     virtual void updateWindow(PHLWINDOW) override;
-    virtual void damageEntire() override;
+    virtual void damageEntire()
+        override; // should be ignored by non-absolute decos
+    virtual bool onInputOnDeco(eInputType const, Vector2D const&, std::any = {})
+        override;
     virtual eDecorationLayer getDecorationLayer() override;
     virtual uint64_t getDecorationFlags() override;
     virtual std::string getDisplayName() override;
+    // IHyprWindowDecoration //////////////////////////////////////////////////
 
     void render() const;
 
@@ -47,7 +52,7 @@ public:
     bool isVisible() const;
 
     // Event Handlers
-    bool onMouseButton(IPointer::SButtonEvent);
+    bool onMouseButton(Vector2D const&, IPointer::SButtonEvent);
     bool onMouseMove(Vector2D);
 
     // Helpers

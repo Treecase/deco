@@ -1,26 +1,14 @@
-#include <cassert>
 #include <expected>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
+#include <stdexcept>
 
 #include "bar.hpp"
 #include "bar/bar.hpp"
 #include "include.hpp"
 
 //// EVENT CALLBACKS //////////////////////////////////////////////////////////
-
-static void cb_mouseButton(
-    void *self,
-    SCallbackInfo& info,
-    std::any data,
-    deco::bar::Bar *bar)
-{
-    auto const event = std::any_cast<IPointer::SButtonEvent>(data);
-    if (bar->isVisible()) {
-        info.cancelled |= bar->onMouseButton(event);
-    }
-}
 
 static void cb_mouseMove(
     void *self,
@@ -58,17 +46,12 @@ static void cb_windowUpdateRules(
 }
 
 struct deco::bar::EventCallbacks {
-    SP<HOOK_CALLBACK_FN> ptr_mouseButton;
     SP<HOOK_CALLBACK_FN> ptr_mouseMove;
     SP<HOOK_CALLBACK_FN> ptr_windowUpdateRules;
 
     EventCallbacks(Bar *bar)
     {
         deco::log("Register event callbacks for {}", bar->m_window.lock());
-        ptr_mouseButton = HyprlandAPI::registerCallbackDynamic(
-            deco::g_handle,
-            "mouseButton",
-            [bar](auto a, auto b, auto c) { cb_mouseButton(a, b, c, bar); });
         ptr_mouseMove = HyprlandAPI::registerCallbackDynamic(
             deco::g_handle,
             "mouseMove",
@@ -79,9 +62,14 @@ struct deco::bar::EventCallbacks {
             [bar](auto a, auto b, auto c) {
                 cb_windowUpdateRules(a, b, c, bar);
             });
-        assert(ptr_mouseButton);
-        assert(ptr_mouseMove);
-        assert(ptr_windowUpdateRules);
+        if (!ptr_mouseMove) {
+            throw std::runtime_error(
+                "failed to register \"mouseMove\" event callback ");
+        }
+        if (!ptr_windowUpdateRules) {
+            throw std::runtime_error(
+                "failed to register \"windowUpdateRules\" event callback ");
+        }
     }
 };
 
@@ -109,7 +97,10 @@ Factory::Factory()
         deco::g_handle,
         "openWindow",
         [this](auto a, auto b, auto c) { cb_openWindow(a, b, c, this); });
-    assert(ptr_openWindow);
+    if (!ptr_openWindow) {
+        throw std::runtime_error(
+            "failed to register \"openWindow\" event callback");
+    }
 }
 
 std::expected<WP<Bar>, Factory::CreateForError> Factory::createFor(

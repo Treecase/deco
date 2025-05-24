@@ -1,9 +1,11 @@
 #include "bar.hpp"
 
+#include <any>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <src/SharedDefs.hpp>
 
 #include "bar/drawpass.hpp"
 #include "models/bar.hpp"
@@ -42,9 +44,7 @@ void Bar::onPositioningReply(SDecorationPositioningReply const& reply)
 
 void Bar::draw(PHLMONITOR monitor, float const& a)
 {
-    if (isVisible()) {
-        g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
-    }
+    g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
 }
 
 eDecorationType Bar::getDecorationType()
@@ -54,12 +54,25 @@ eDecorationType Bar::getDecorationType()
 
 void Bar::updateWindow(PHLWINDOW)
 {
-    g_pDecorationPositioner->repositionDeco(this);
 }
 
 void Bar::damageEntire()
 {
     g_pHyprRenderer->damageBox(getFullRenderArea());
+}
+
+bool Bar::onInputOnDeco(
+    eInputType const event,
+    Vector2D const& mousePos,
+    std::any data)
+{
+    switch (event) {
+    case INPUT_TYPE_BUTTON:
+        return onMouseButton(
+            mousePos,
+            std::any_cast<IPointer::SButtonEvent>(data));
+    }
+    return false;
 }
 
 eDecorationLayer Bar::getDecorationLayer()

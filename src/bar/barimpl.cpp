@@ -7,6 +7,8 @@
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprutils/math/Vector2D.hpp>
+#include <src/debug/Log.hpp>
 
 #include "bar/bar.hpp"
 #include "config/config.hpp"
@@ -18,13 +20,20 @@ using namespace deco::bar;
 
 // Event Handlers
 
-bool Bar::onMouseButton(IPointer::SButtonEvent event)
+bool Bar::onMouseButton(Vector2D const& pos, IPointer::SButtonEvent event)
 {
+    deco::log(
+        eLogLevel::TRACE,
+        "Bar::onMouseButton: btn {}",
+        event.state == WL_POINTER_BUTTON_STATE_PRESSED ? "down" : "up");
     if (!isEventValid()) {
-        return false;
+        return true;
+    }
+    if (event.button != 272) { // 272 = left mouse
+        return true;
     }
     m_was_clicked = false;
-    auto const pointer = getMouseRelative();
+    auto const pointer = getGlobalPointRelative(pos);
 
     // Check if the user has clicked on a button.
     for (auto const& btn : positionButtons(m_assignedBox.size())) {
@@ -43,7 +52,7 @@ bool Bar::onMouseButton(IPointer::SButtonEvent event)
                 damageEntire();
                 break;
             }
-            return false;
+            return true;
         }
     }
 
@@ -65,7 +74,7 @@ bool Bar::onMouseButton(IPointer::SButtonEvent event)
         }
         break;
     }
-    return false;
+    return true;
 }
 
 bool Bar::onMouseMove(Vector2D pointer_global)
@@ -202,12 +211,20 @@ bool Bar::isMouseInside() const
     return box.containsPoint(cursor_pos);
 }
 
-bool Bar::isEventValid() const {
-    if (!m_window->m_workspace || !m_window->m_workspace->isVisible() || !g_pInputManager->m_exclusiveLSes.empty() || (g_pSeatManager->m_seatGrab && !g_pSeatManager->m_seatGrab->accepts(m_window->m_wlSurface->resource()))) {
+bool Bar::isEventValid() const
+{
+    if (!m_window->m_workspace || !m_window->m_workspace->isVisible()
+        || !g_pInputManager->m_exclusiveLSes.empty()
+        || (g_pSeatManager->m_seatGrab
+            && !g_pSeatManager->m_seatGrab->accepts(
+                m_window->m_wlSurface->resource()))) {
         return false;
     }
-    auto const window_at_cursor = g_pCompositor->vectorToWindowUnified(g_pInputManager->getMouseCoordsInternal(), RESERVED_EXTENTS | INPUT_EXTENTS | ALLOW_FLOATING);
-    if (!window_at_cursor != m_window && m_window != g_pCompositor->m_lastWindow) {
+    auto const window_at_cursor = g_pCompositor->vectorToWindowUnified(
+        g_pInputManager->getMouseCoordsInternal(),
+        RESERVED_EXTENTS | INPUT_EXTENTS | ALLOW_FLOATING);
+    if (!window_at_cursor != m_window
+        && m_window != g_pCompositor->m_lastWindow) {
         return false;
     }
     return true;
