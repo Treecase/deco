@@ -17,9 +17,7 @@ static void cb_mouseMove(
     deco::bar::Bar *bar)
 {
     auto const mouse_pos = std::any_cast<Vector2D>(data);
-    if (bar->isVisible()) {
-        info.cancelled |= bar->onMouseMove(mouse_pos);
-    }
+    bar->onMouseMove(mouse_pos);
 }
 
 static void cb_windowUpdateRules(

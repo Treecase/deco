@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 26)
 
 add_library(deco SHARED
     src/bar/bar.cpp
-    src/bar/barimpl.cpp
+    src/bar/bar-IHyprWindowDecoration.cpp
     src/bar/factory.cpp
     src/bar/drawpass.cpp
     src/config/keywords.cpp
