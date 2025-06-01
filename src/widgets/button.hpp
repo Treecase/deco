@@ -6,27 +6,34 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/SharedDefs.hpp>
+#include <hyprutils/math/Vector2D.hpp>
+#include <string>
 
 #include "models/button.hpp"
 
-namespace widget {
+namespace deco {
 
-enum State {
-    NORMAL,
-    HOVERED,
-    CLICKED,
-};
+using State = deco::ButtonState;
 
-class Button {
+class ButtonInstance {
 public:
-    deco::ButtonModel const& model;
-    Vector2D position; // Relative to bar position
-    State state{NORMAL};
+    explicit ButtonInstance(ButtonModel const& model, Vector2D const& position);
 
-    Button(deco::ButtonModel const&, Vector2D const&);
+    std::string name() const { return m_model.name(); }
+
     CBox box() const;
+    deco::ButtonModel const& model() const;
+    Vector2D position() const;
+    State state() const;
 
-    void render(Vector2D const& origin, double scale) const;
+    void setState(State const&);
+    void setPosition(Vector2D const&);
+
+private:
+    deco::ButtonModel const& m_model;
+    Vector2D m_position; // Relative to bar position
+    State m_state{State::NORMAL};
+    bool m_is_mouse_inside{false};
 };
 
-} // namespace widget
+} // namespace deco

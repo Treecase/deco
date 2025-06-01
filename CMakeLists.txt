@@ -2,22 +2,27 @@ cmake_minimum_required(VERSION 3.25)
 
 project(deco
     DESCRIPTION "Window bars for Hyprland."
-    VERSION "0.5.0"
+    VERSION "0.6.0"
     LANGUAGES CXX
 )
 
 set(CMAKE_CXX_STANDARD 26)
 
 add_library(deco SHARED
-    src/bar/bar.cpp
     src/bar/bar-IHyprWindowDecoration.cpp
-    src/bar/factory.cpp
+    src/bar/bar.cpp
+    src/bar/buttonmanager.cpp
     src/bar/drawpass.cpp
-    src/config/keywords.cpp
-    src/config/values.cpp
+    src/bar/positioner.cpp
+
+    src/models/bar.cpp
+    src/models/button.cpp
+
     src/widgets/button.cpp
-    src/events.cpp
+
+    src/config.cpp
     src/main.cpp
+    src/plugin.cpp
 )
 
 set(DECO_AUTHOR "Treecase")

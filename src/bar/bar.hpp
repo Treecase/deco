@@ -1,25 +1,22 @@
 #pragma once
-#include <expected>
-#include <format>
+#include <cstdint>
 #include <hyprland/src/helpers/memory/Memory.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
 #include <hyprutils/math/Vector2D.hpp>
+#include <optional>
+
+#include "bar/buttonmanager.hpp"
 
 namespace deco::bar {
 
-struct EventCallbacks;
+class RenderPass;
 
 class Bar : public IHyprWindowDecoration {
 public:
-    struct Drag {
-        Vector2D start;
-    };
-
     PHLWINDOWREF m_window;
     CBox m_assignedBox{};
 
-    /// WARNING: Internal use only!!!
     explicit Bar(PHLWINDOW);
     virtual ~Bar() = default;
 
@@ -39,94 +36,48 @@ public:
     virtual std::string getDisplayName() override;
     // IHyprWindowDecoration //////////////////////////////////////////////////
 
-    void render() const;
-
-    void startDrag();
-    void updateDrag();
-    void endDrag();
-
     void hide(bool hide = true);
-
-    bool isHidden() const { return m_is_hidden; }
-
+    bool isHidden() const;
+    bool isHiddenManual() const;
+    bool isHiddenRule() const;
     bool isVisible() const;
-
-    // Event Handlers
-    bool onMouseButton(Vector2D const&, IPointer::SButtonEvent);
-    bool onMouseMove(Vector2D);
+    void regenerateButtons();
 
     // Helpers
     CBox getAssignedBoxInGlobalSpace() const;
-    CBox getFullRenderArea() const;
     bool isMouseInside() const;
     bool isEventValid() const;
 
     Vector2D getMouseRelative() const;
     Vector2D getGlobalPointRelative(Vector2D const& point) const;
-
     double getCenterline() const;
 
-    UP<EventCallbacks> cbs{};
-
 private:
-    bool m_is_hidden{false};
-    bool m_was_button_clicked{false};
-    bool m_was_clicked{false};
-    bool m_is_dragged{false};
-    Vector2D m_last_mouse_pos{};
-    Vector2D m_last_click_pos{};
+    struct Drag {
+        Vector2D start;
+        explicit Drag(Vector2D const&);
+        ~Drag();
+    };
+
+    friend class deco::bar::RenderPass;
+
+    std::optional<Drag> m_drag{};
+    bool m_manual_hide{false};
+    bool m_rule_hide{false};
+    ButtonManager m_btnmgr;
+
+    Vector2D m_mouse_pos{};
+
+    // Event handlers
+    SP<HOOK_CALLBACK_FN> ptr_configReloaded{nullptr};
+    SP<HOOK_CALLBACK_FN> ptr_mouseButton{nullptr};
+    SP<HOOK_CALLBACK_FN> ptr_mouseMove{nullptr};
+    SP<HOOK_CALLBACK_FN> ptr_windowUpdateRules{nullptr};
+
+    void onConfigReloaded(void *, SCallbackInfo&, std::any);
+    void onMouseButton(void *, SCallbackInfo&, std::any);
+    void onMouseMove(void *, SCallbackInfo&, std::any);
+    void onWindowUpdateRules(void *, SCallbackInfo&, std::any);
 };
-
-////////////////////////////////////////////////////////////////////////////////
-
-class Factory {
-public:
-    enum class CreateForError { DoesntWantDecorations, Failed };
-
-    Factory();
-
-    std::expected<WP<Bar>, CreateForError> createFor(PHLWINDOW window);
-    void removeBar(PHLWINDOW window);
-
-private:
-    SP<HOOK_CALLBACK_FN> ptr_openWindow;
-};
-
-inline Factory g_factory{};
 
 } // namespace deco::bar
-
-template<>
-struct std::formatter<deco::bar::Factory::CreateForError> {
-    template<class FmtContext>
-    FmtContext::iterator format(
-        deco::bar::Factory::CreateForError const& err,
-        FmtContext& ctx) const
-    {
-        switch (err) {
-        case deco::bar::Factory::CreateForError::Failed:
-            return std::ranges::copy(
-                       "HyprlandAPI::addWindowDecoration failed",
-                       ctx.out())
-                .out;
-        case deco::bar::Factory::CreateForError::DoesntWantDecorations:
-            return std::ranges::copy(
-                       "Window doesn't want decorations",
-                       ctx.out())
-                .out;
-        }
-        return ctx.out();
-    }
-
-    template<class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext& ctx)
-    {
-        auto it = ctx.begin();
-        if (it != ctx.end() && *it != '}') {
-            throw std::format_error(
-                "Invalid format args for Factory::CreateForError.");
-        } else {
-            return it;
-        }
-    }
-};

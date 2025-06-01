@@ -1,35 +1,47 @@
 #include "widgets/button.hpp"
 
-using namespace widget;
+#include <hyprutils/math/Vector2D.hpp>
 
-Button::Button(deco::ButtonModel const& m, Vector2D const& p)
-: model{m}
-, position{p}
+#include "models/button.hpp"
+
+using deco::ButtonInstance;
+using deco::ButtonModel;
+using deco::State;
+
+ButtonInstance::ButtonInstance(
+    ButtonModel const& model,
+    Vector2D const& position)
+: m_model{model}
+, m_position{position}
 {
 }
 
-CBox Button::box() const
+CBox ButtonInstance::box() const
 {
-    return model.box().translate(position);
+    return m_model.box().translate(m_position);
 }
 
-void Button::render(Vector2D const& origin, double scale) const
+ButtonModel const& ButtonInstance::model() const
 {
-    CHyprColor color;
-    switch (state) {
-    case CLICKED:
-        color = model.clicked;
-        break;
-    case NORMAL:
-        color = model.normal;
-        break;
-    case HOVERED:
-        color = model.hovered;
-        break;
-    }
+    return m_model;
+}
 
-    g_pHyprOpenGL->renderRect(
-        model.box().translate(position).scale(scale).translate(origin).round(),
-        color,
-        model.diameter * 0.5 * scale);
+Vector2D ButtonInstance::position() const
+{
+    return m_position;
+}
+
+State ButtonInstance::state() const
+{
+    return m_state;
+}
+
+void ButtonInstance::setState(State const& state)
+{
+    m_state = state;
+}
+
+void ButtonInstance::setPosition(Vector2D const& position)
+{
+    m_position = position;
 }

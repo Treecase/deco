@@ -1,17 +1,21 @@
-#include <cassert>
 #include <hyprland/src/Compositor.hpp>
+#include <hyprland/src/debug/Log.hpp>
 #include <hyprland/src/helpers/Color.hpp>
+#include <hyprland/src/helpers/memory/Memory.hpp>
+#include <hyprland/src/macros.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/SharedDefs.hpp>
 #include <hyprlang.hpp>
+#include <hyprutils/memory/UniquePtr.hpp>
 #include <hyprutils/string/VarList.hpp>
 #include <string>
 
-#include "bar/bar.hpp"
-#include "config/config.hpp"
 #include "defines.hpp"
-#include "events.hpp"
 #include "include.hpp"
+#include "log.hpp"
+
+// Declared in include.hpp
+UP<deco::Plugin> deco::g_plugin{nullptr};
 
 // WARNING: Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION()
@@ -21,34 +25,17 @@ APICALL EXPORT std::string PLUGIN_API_VERSION()
 
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
-    deco::g_handle = handle;
-    assert(deco::g_handle);
+#ifndef NDEBUG
+    Debug::m_trace = true;
+#endif
+
+    TRACE;
 
     deco::log("Initializing...");
-
-    // ALWAYS add this to your plugins. It will prevent random crashes coming
-    // from mismatched header versions.
-    std::string const HASH = __hyprland_api_get_hash();
-    if (HASH != GIT_COMMIT_HASH) {
-        deco::notify("Mismatched headers! Can't proceed.", ICON_ERROR);
-        throw std::runtime_error("[deco] Version mismatch");
-    }
-
-    deco::config::init();
-    deco::events::init();
-
-    deco::log("Adding bars to existing windows");
-    for (auto w : g_pCompositor->m_windows) {
-        using Err = deco::bar::Factory::CreateForError;
-        auto const d = deco::bar::g_factory.createFor(w);
-        auto const e = d.error_or(Err::DoesntWantDecorations);
-        if (e != Err::DoesntWantDecorations) {
-            deco::log(ERR, "Failed to create deco for {}: {}", w, e);
-        }
-    }
-
+    deco::g_plugin = makeUnique<deco::Plugin>(handle);
+    deco::g_plugin->init();
     deco::log("Initialization complete");
-    deco::notify("Initialized successfully.", ICON_OK);
+    deco::g_plugin->notify("Initialized successfully.", ICON_OK);
 
     return {
         .name = "deco",
@@ -59,4 +46,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 
 APICALL EXPORT void PLUGIN_EXIT()
 {
+    TRACE;
+    deco::g_plugin.reset();
 }

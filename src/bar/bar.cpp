@@ -1,172 +1,90 @@
 #include "bar/bar.hpp"
 
+#include <wayland-server-protocol.h>
+
+#include <any>
+#include <functional>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/Window.hpp>
+#include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 #include <hyprland/src/managers/SeatManager.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprlang.hpp>
+#include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
-#include <src/managers/input/InputManager.hpp>
+#include <memory>
+#include <ranges>
+#include <vector>
 
-#include "config/config.hpp"
+#include "bar/buttonmanager.hpp"
 #include "include.hpp"
+#include "input.hpp"
+#include "log.hpp"
 #include "widgets/button.hpp"
-#include "widgets/container.hpp"
 
-using namespace deco::bar;
+using deco::bar::Bar;
 
-// Event Handlers
-
-bool Bar::onMouseButton(Vector2D const& pos, IPointer::SButtonEvent event)
+Bar::Bar(PHLWINDOW win)
+: IHyprWindowDecoration{win}
+, m_window{win}
+, m_btnmgr{CBox{}}
 {
-    deco::log(
-        "Bar::onMouseButton: btn {}",
-        event.state == WL_POINTER_BUTTON_STATE_PRESSED ? "down" : "up");
-    // if (!isEventValid()) {
-    //     return true;
-    // }
-    // if (event.button != 272) { // 272 = left mouse
-    //     return true;
-    // }
-    m_was_clicked = false;
-    auto const pointer = getGlobalPointRelative(pos);
-
-    // Check if the user has clicked on a button.
-    for (auto const& btn : positionButtons(m_assignedBox.size())) {
-        auto btn_box = btn.box();
-        bool const is_hovered = btn_box.containsPoint(pointer);
-        if (is_hovered && event.button == 272) {
-            switch (event.state) {
-            case WL_POINTER_BUTTON_STATE_PRESSED:
-                m_was_button_clicked = true;
-                m_last_click_pos = pointer;
-                damageEntire();
-                break;
-            case WL_POINTER_BUTTON_STATE_RELEASED:
-                m_was_button_clicked = false;
-                btn.model.exec();
-                damageEntire();
-                break;
-            }
-            return true;
-        }
-    }
-
-    switch (event.state) {
-    case WL_POINTER_BUTTON_STATE_PRESSED:
-        if (isMouseInside() && event.button == 272) {
-            m_was_clicked = true;
-            startDrag();
-            return true;
-        }
-        break;
-    case WL_POINTER_BUTTON_STATE_RELEASED:
-        if (m_was_button_clicked) {
-            damageEntire();
-        }
-        m_was_button_clicked = false;
-        if (m_is_dragged) {
-            endDrag();
-        }
-        break;
-    }
-    return true;
-}
-
-bool Bar::onMouseMove(Vector2D pointer_global)
-{
-    auto const pointer = getGlobalPointRelative(pointer_global);
-
-    if (!m_was_button_clicked) {
-        // Check if the mouse has entered or exited a button, and redraw it if
-        // so.
-        for (auto const& btn : positionButtons(m_assignedBox.size())) {
-            auto btn_box = btn.box();
-            bool const is_hovered = btn_box.containsPoint(pointer);
-            bool const was_hovered = btn_box.containsPoint(m_last_mouse_pos);
-            if (is_hovered != was_hovered) {
-                damageEntire();
-            }
-        }
-    }
-    m_last_mouse_pos = pointer;
-    return true;
-}
-
-//
-
-void Bar::render() const
-{
-    auto const mon = g_pHyprOpenGL->m_renderData.pMonitor;
-    auto const win = m_window;
-
-    auto const rounding = m_window->rounding() * mon->m_scale;
-
-    // Bar rect in render space.
-    auto barrect = getFullRenderArea()
-                       .translate(-mon->m_position)
-                       .translate(m_window->m_floatingOffset)
-                       .scale(mon->m_scale)
-                       .round();
-
-    // Draw the bar.
-    g_pHyprOpenGL->renderRect(
-        barrect.expand(mon->m_scale * 1.0).round(),
-        config::bar::fill_color::get(),
-        rounding,
-        win->roundingPower());
-
-    // Draw the buttons.
-    for (auto btn : deco::positionButtons(m_assignedBox.size())) {
-        if (btn.box().containsPoint(getMouseRelative())) {
-            btn.state =
-                m_was_button_clicked ? widget::CLICKED : widget::HOVERED;
-        }
-        btn.render(barrect.pos(), mon->m_scale);
-    }
-}
-
-//
-
-void Bar::startDrag()
-{
-    deco::log("Drag started on {}", m_window.lock());
-    g_pKeybindManager->changeMouseBindMode(MBIND_MOVE);
-    m_is_dragged = true;
-}
-
-void Bar::updateDrag()
-{
-}
-
-void Bar::endDrag()
-{
-    m_is_dragged = false;
-    g_pKeybindManager->changeMouseBindMode(MBIND_INVALID);
-    deco::log("Drag ended on {}", m_window.lock());
+    TRACE;
+    deco::log("Register event callbacks for {}", m_window.lock());
+    ptr_configReloaded = g_plugin->addCallback(
+        "configReloaded",
+        std::bind_front(&Bar::onConfigReloaded, this));
+    ptr_mouseButton = g_plugin->addCallback(
+        "mouseButton",
+        std::bind_front(&Bar::onMouseButton, this));
+    ptr_mouseMove = g_plugin->addCallback(
+        "mouseMove",
+        std::bind_front(&Bar::onMouseMove, this));
+    ptr_windowUpdateRules = g_plugin->addCallback(
+        "windowUpdateRules",
+        std::bind_front(&Bar::onWindowUpdateRules, this));
+    regenerateButtons();
 }
 
 void Bar::hide(bool hide)
 {
-    if (hide == m_is_hidden) {
+    TRACE;
+    if (hide == m_manual_hide) {
         return;
     }
-    m_is_hidden = hide;
-    deco::log("Bar for {} {}", m_window.lock(), hide ? "hidden" : "unhidden");
+    m_manual_hide = hide;
+    deco::log(
+        "Bar for {} manually {}",
+        m_window.lock(),
+        hide ? "hidden" : "unhidden");
     g_pDecorationPositioner->repositionDeco(this);
+}
+
+bool Bar::isHidden() const
+{
+    return isHiddenManual() || isHiddenRule();
+}
+
+bool Bar::isHiddenManual() const
+{
+    return m_manual_hide;
+}
+
+bool Bar::isHiddenRule() const
+{
+    return m_rule_hide;
 }
 
 bool Bar::isVisible() const
 {
     return validMapped(m_window)
         && m_window->m_windowData.decorate.valueOrDefault()
-        && !m_window->m_X11DoesntWantBorders && !m_is_hidden;
+        && !m_window->m_X11DoesntWantBorders && !isHidden();
 }
-
-// Private Helpers
 
 CBox Bar::getAssignedBoxInGlobalSpace() const
 {
@@ -186,18 +104,12 @@ CBox Bar::getAssignedBoxInGlobalSpace() const
     return box.translate(workspace_offset);
 }
 
-CBox Bar::getFullRenderArea() const
-{
-    auto box = getAssignedBoxInGlobalSpace();
-    box.height += 2 * m_window->rounding();
-    return box;
-}
-
 bool Bar::isMouseInside() const
 {
-    auto const cursor_pos = g_pInputManager->getMouseCoordsInternal();
-    auto const box = getAssignedBoxInGlobalSpace();
-    return box.containsPoint(cursor_pos);
+    auto const window_at_cursor = g_pCompositor->vectorToWindowUnified(
+        g_pInputManager->getMouseCoordsInternal(),
+        RESERVED_EXTENTS | INPUT_EXTENTS | ALLOW_FLOATING);
+    return window_at_cursor == m_window;
 }
 
 bool Bar::isEventValid() const
@@ -233,4 +145,142 @@ Vector2D Bar::getGlobalPointRelative(Vector2D const& point) const
 double Bar::getCenterline() const
 {
     return m_assignedBox.height / 2.0;
+}
+
+void Bar::regenerateButtons()
+{
+    TRACE;
+    std::construct_at(&m_btnmgr, ButtonManager::newFromConfig(m_assignedBox));
+}
+
+void Bar::onConfigReloaded(void *, SCallbackInfo&, std::any)
+{
+    regenerateButtons();
+}
+
+// NOTE: This is called for _all_ button events, not just clicks inside
+// the bar itself.
+void Bar::onMouseButton(void *, SCallbackInfo&, std::any data)
+{
+    TRACE;
+    auto const btn = std::any_cast<IPointer::SButtonEvent>(data);
+    deco::log(
+        "Bar::onMouseButton: btn {}",
+        btn.state == WL_POINTER_BUTTON_STATE_PRESSED ? "down" : "up");
+
+    // We only care about left clicks
+    if (btn.button != MOUSE_BUTTON_LEFT) {
+        return;
+    }
+
+    auto const button_is_down = btn.state == WL_POINTER_BUTTON_STATE_PRESSED;
+    auto const pointer = getGlobalPointRelative(m_mouse_pos);
+    auto const pointer_is_inside_bar =
+        getAssignedBoxInGlobalSpace().containsPoint(m_mouse_pos)
+        && isEventValid();
+
+    if (pointer_is_inside_bar) {
+        auto btn = m_btnmgr.getButtonAt(pointer);
+        if (btn != nullptr) {
+            // A button was clicked
+            btn->setState(State::CLICKED);
+            deco::log("Clicked button {}", btn->name());
+            damageEntire();
+        } else {
+            // Click on the bar itself
+            if (button_is_down) {
+                // Button clicked, start of a drag
+                m_drag.emplace(m_mouse_pos);
+            } else {
+                // Button released, end of a drag
+                m_drag.reset();
+            }
+        }
+    } else {
+        // Click occurred outside of the bar
+        if (m_drag.has_value() && !button_is_down) {
+            // Button released, end of a drag
+            m_drag.reset();
+        }
+    }
+
+    // Check for released buttons
+    if (btn.state == WL_POINTER_BUTTON_STATE_RELEASED) {
+        auto clicked_buttons =
+            m_btnmgr.buttons() | std::views::filter([](auto& b) {
+                return b.state() == State::CLICKED;
+            });
+        for (auto& button : clicked_buttons) {
+            deco::log("Released button {}", button.name());
+            button.setState(State::NORMAL);
+            if (button.box().containsPoint(pointer)) {
+                button.model().exec();
+            }
+        }
+        damageEntire();
+    }
+}
+
+void Bar::onMouseMove(void *, SCallbackInfo&, std::any data)
+{
+    TRACE;
+    m_mouse_pos = std::any_cast<Vector2D>(data);
+
+    auto const pointer = getGlobalPointRelative(m_mouse_pos);
+    auto btn = m_btnmgr.getButtonAt(pointer);
+
+    if (m_drag.has_value()) {
+        // Window is being dragged
+        g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
+    } else if (btn != nullptr) {
+        // Mouse is over a button
+        deco::log("Hovered button {}", btn->name());
+        if (btn->state() != State::CLICKED) {
+            btn->setState(State::HOVERED);
+        }
+        damageEntire();
+    } else {
+        // Mouse is somewhere else
+        for (auto& button : m_btnmgr.buttons()) {
+            if (button.state() == State::HOVERED) {
+                button.setState(State::NORMAL);
+            }
+        }
+        damageEntire();
+    }
+}
+
+void Bar::onWindowUpdateRules(void *, SCallbackInfo&, std::any data)
+{
+    TRACE;
+    PHLWINDOW const window = std::any_cast<PHLWINDOW>(data);
+    PHLWINDOW const bar_win = m_window.lock();
+    if (bar_win != window) {
+        return;
+    }
+    auto const it = std::ranges::find_if(
+        bar_win->m_matchedRules,
+        [](auto rule) { return rule->m_rule == "plugin:deco:nobar"; });
+    auto const matched = it != bar_win->m_matchedRules.end();
+    if (matched) {
+        deco::log("{} matched rule plugin:deco:nobar", window);
+    }
+    m_rule_hide = matched;
+    g_pDecorationPositioner->repositionDeco(this);
+    bar_win->updateWindowDecos();
+}
+
+// Drag ///////////////////////////////////////////////////////////////////////
+
+Bar::Drag::Drag(Vector2D const& start)
+: start{start}
+{
+    deco::log("Drag {} started at {}", static_cast<void *>(this), start);
+    g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
+}
+
+Bar::Drag::~Drag()
+{
+    g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
+    deco::log("Drag {} ended", static_cast<void *>(this));
 }

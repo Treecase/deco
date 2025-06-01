@@ -1,34 +1,142 @@
 #include "drawpass.hpp"
 
+#include <GLES3/gl32.h>
+
+#include <algorithm>
+#include <hyprland/src/debug/Log.hpp>
+#include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/desktop/Window.hpp>
 #include <hyprland/src/helpers/Color.hpp>
+#include <hyprland/src/macros.hpp>
+#include <hyprland/src/render/OpenGL.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+#include <hyprutils/math/Box.hpp>
+#include <hyprutils/math/Vector2D.hpp>
 
-// Constructor
+#include "include.hpp"
+#include "log.hpp"
+#include "models/button.hpp"
+#include "widgets/button.hpp"
 
-deco::bar::RenderPass::RenderPass(Bar *bar)
+using deco::ButtonInstance;
+using deco::bar::RenderPass;
+
+RenderPass::RenderPass(Bar const *bar)
 : m_bar{bar}
 {
 }
 
+void RenderPass::renderBar(CBox const& rect, int round, float roundingPower)
+    const
+{
+    TRACE;
+    g_pHyprOpenGL->renderRect(
+        rect.copy(),
+        g_plugin->config().bar.fill_color(),
+        round,
+        roundingPower);
+}
+
+void RenderPass::renderButton(
+    ButtonInstance const& button,
+    Vector2D const& origin,
+    float scale_factor) const
+{
+    TRACE;
+    CHyprColor const color = button.model().colorFor(button.state());
+    auto const box = button.box().scale(scale_factor).translate(origin).round();
+    int const round = button.model().size().x * 0.5 * scale_factor;
+    g_pHyprOpenGL->renderRect(box, color, round);
+}
+
 // IPassElement Overrides
 
-void deco::bar::RenderPass::draw(CRegion const&)
+void RenderPass::draw(CRegion const&)
 {
-    m_bar->render();
+    TRACE;
+    PHLMONITOR const mon = g_pHyprOpenGL->m_renderData.pMonitor.lock();
+    auto const win = m_bar->m_window;
+
+    auto const scale_factor = mon->m_scale;
+    auto const rounding = win->rounding() * scale_factor;
+
+    // Enable and clear stencil buffer to 0
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilMask(0xff);
+    glClear(GL_STENCIL_BUFFER_BIT);
+
+    // Mask out the window contents using the stencil buffer.
+    glStencilFunc(GL_ALWAYS, 1, 0xff);
+    glDepthMask(GL_FALSE);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    auto window_rect = win->getWindowMainSurfaceBox()
+                           .translate(-mon->m_position)
+                           .translate(win->m_floatingOffset)
+                           .scale(mon->m_scale);
+
+    // Shrink the window rect to avoid gaps between the bar and window content
+    float const ROUNDING_COMPENSATION = 2.f * scale_factor;
+    if (window_rect.width > 2 * ROUNDING_COMPENSATION) {
+        window_rect.x += ROUNDING_COMPENSATION;
+        window_rect.width =
+            std::max(1.0, window_rect.width - 2 * ROUNDING_COMPENSATION);
+    }
+    if (window_rect.height > 2 * ROUNDING_COMPENSATION) {
+        window_rect.y += ROUNDING_COMPENSATION;
+        window_rect.height =
+            std::max(1.0, window_rect.height - 2 * ROUNDING_COMPENSATION);
+    }
+
+    g_pHyprOpenGL->renderRect(
+        window_rect.round(),
+        CHyprColor{},
+        rounding,
+        win->roundingPower());
+
+    // Now the bar won't draw behind the window contents.
+    glStencilFunc(GL_NOTEQUAL, 1, 0xff);
+    glStencilMask(0x00);
+    glDepthMask(GL_TRUE);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+    // Calculate the bar rect in render space.
+    auto const barrect =
+        [&]() {
+            auto box = m_bar->getAssignedBoxInGlobalSpace();
+            box.height += win->getWindowMainSurfaceBox().height;
+            return box;
+        }()
+            .translate(-mon->m_position)
+            .translate(win->m_floatingOffset)
+            .expand(1.0)
+            .scale(mon->m_scale)
+            .round();
+
+    // Draw the bar.
+    renderBar(barrect, rounding, win->roundingPower());
+
+    // Draw the buttons.
+    for (auto const& btn : m_bar->m_btnmgr.buttons()) {
+        renderButton(btn, barrect.pos(), scale_factor);
+    }
+
+    glStencilMask(0xff);
+    glClear(GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_STENCIL_TEST);
 }
 
-bool deco::bar::RenderPass::needsLiveBlur()
+bool RenderPass::needsLiveBlur()
 {
     return false;
 }
 
-bool deco::bar::RenderPass::needsPrecomputeBlur()
+bool RenderPass::needsPrecomputeBlur()
 {
     return false;
 }
 
-char const *deco::bar::RenderPass::passName()
+char const *RenderPass::passName()
 {
     return "deco::RenderPass";
 }

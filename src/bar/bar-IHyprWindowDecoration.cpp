@@ -3,22 +3,13 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/Renderer.hpp>
-#include <src/SharedDefs.hpp>
+#include <hyprland/src/SharedDefs.hpp>
 
-#include "bar.hpp"
+#include "bar/bar.hpp"
 #include "bar/drawpass.hpp"
 #include "include.hpp"
-#include "models/bar.hpp"
 
 using namespace deco::bar;
-
-// Constructor
-
-Bar::Bar(PHLWINDOW win)
-: IHyprWindowDecoration{win}
-, m_window{win}
-{
-}
 
 // IHyprWindowDecoration Overrides
 
@@ -27,7 +18,7 @@ SDecorationPositioningInfo Bar::getPositioningInfo()
     // Border priority is hardcoded in
     // hyprland/src/render/decorations/CHyprBorderDecoration.cpp.
     static constexpr uint32_t HYPRLAND_BORDER_PRIORITY = 10000;
-    double const height = isHidden() ? 0 : g_barmodel.height();
+    double const height = isHidden() ? 0 : g_plugin->config().bar.height();
     return {
         .policy = DECORATION_POSITION_STICKY,
         .edges = DECORATION_EDGE_TOP,
@@ -40,11 +31,14 @@ SDecorationPositioningInfo Bar::getPositioningInfo()
 void Bar::onPositioningReply(SDecorationPositioningReply const& reply)
 {
     m_assignedBox = reply.assignedGeometry;
+    m_btnmgr.resize(m_assignedBox);
 }
 
-void Bar::draw(PHLMONITOR monitor, float const& a)
+void Bar::draw(PHLMONITOR, float const&)
 {
-    g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
+    if (isVisible()) {
+        g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
+    }
 }
 
 eDecorationType Bar::getDecorationType()
@@ -58,23 +52,14 @@ void Bar::updateWindow(PHLWINDOW)
 
 void Bar::damageEntire()
 {
-    g_pHyprRenderer->damageBox(getFullRenderArea());
+    g_pHyprRenderer->damageBox(
+        getAssignedBoxInGlobalSpace().translate(m_window->m_floatingOffset));
 }
 
-bool Bar::onInputOnDeco(
-    eInputType const event,
-    Vector2D const& mousePos,
-    std::any data)
+bool Bar::onInputOnDeco(eInputType const, Vector2D const&, std::any)
 {
-    switch (event) {
-    case INPUT_TYPE_BUTTON:
-        deco::log("button event");
-        return onMouseButton(
-            mousePos,
-            std::any_cast<IPointer::SButtonEvent>(data));
-    default:
-        return false;
-    }
+    damageEntire();
+    return true;
 }
 
 eDecorationLayer Bar::getDecorationLayer()

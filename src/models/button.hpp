@@ -3,36 +3,40 @@
 #include <format>
 #include <hyprland/src/helpers/Color.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
+#include <hyprlang.hpp>
 #include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
-
-#include "include.hpp"
+#include <string>
 
 namespace deco {
 
-struct ButtonModel {
-    int diameter{16};
-    CHyprColor normal{0xff45475a};
-    CHyprColor hovered{0xff585b70};
-    CHyprColor clicked{0xff313244};
-    std::string action{};
+enum class ButtonState { NORMAL, HOVERED, CLICKED };
 
-    Hyprutils::Math::Vector2D size() const { return {diameter, diameter}; }
+class ButtonModel {
+public:
+    ButtonModel(
+        std::string const& action,
+        Hyprlang::INT diameter,
+        CHyprColor const& normal,
+        CHyprColor const& hovered,
+        CHyprColor const& clicked);
 
-    Hyprutils::Math::CBox box() const
-    {
-        return {
-            {0, 0},
-            size()
-        };
-    }
+    Vector2D size() const;
+    CBox box() const;
+    void exec() const;
 
-    void exec() const
-    {
-        deco::log("exec button action '{}'", action);
-        auto dispatch_exec = g_pKeybindManager->m_dispatchers.at("exec");
-        std::invoke(dispatch_exec, action);
-    }
+    std::string name() const { return m_action; }
+
+    CHyprColor const& colorFor(ButtonState const& state) const;
+
+private:
+    std::string const m_action;
+    Hyprlang::INT const m_diameter;
+    CHyprColor const m_normal;
+    CHyprColor const m_hovered;
+    CHyprColor const m_clicked;
+
+    friend struct std::formatter<deco::ButtonModel>;
 };
 
 } // namespace deco
@@ -44,13 +48,13 @@ struct std::formatter<deco::ButtonModel> {
         const
     {
         auto const out = std::format(
-            "Button(diameter={}  clicked={:x}  hovered={:x}  normal={:x}  "
-            "action={})",
-            btn.diameter,
-            btn.clicked.getAsHex(),
-            btn.hovered.getAsHex(),
-            btn.normal.getAsHex(),
-            btn.action);
+            "Button(action={} diameter={} clicked={:x} hovered={:x} "
+            "normal={:x})",
+            btn.m_action,
+            btn.m_diameter,
+            btn.m_clicked.getAsHex(),
+            btn.m_hovered.getAsHex(),
+            btn.m_normal.getAsHex());
         return std::ranges::copy(std::move(out), ctx.out()).out;
     }
 
