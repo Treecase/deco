@@ -1,6 +1,12 @@
 [repository]
 name = "deco"
 authors = ["Treecase"]
+commit_pins = [
+    [
+        "9958d297641b5c84dcff93f9039d80a5ad37ab00",
+        "3b48702a3545fc9d03b96ee2025816e1db2d9ce6",
+    ],
+]
 
 [deco]
 description = "Window bars for Hyprland."
