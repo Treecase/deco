@@ -4,6 +4,7 @@
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 #include <hyprland/src/SharedDefs.hpp>
+#include <hyprutils/memory/UniquePtr.hpp>
 
 #include "bar/bar.hpp"
 #include "bar/drawpass.hpp"
@@ -37,7 +38,7 @@ void Bar::onPositioningReply(SDecorationPositioningReply const& reply)
 void Bar::draw(PHLMONITOR, float const&)
 {
     if (isVisible()) {
-        g_pHyprRenderer->m_renderPass.add(makeShared<RenderPass>(this));
+        g_pHyprRenderer->m_renderPass.add(makeUnique<RenderPass>(this));
     }
 }
 
