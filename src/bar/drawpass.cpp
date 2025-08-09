@@ -26,15 +26,52 @@ RenderPass::RenderPass(Bar const *bar)
 {
 }
 
-void RenderPass::renderBar(CBox const& rect, int round, float roundingPower)
-    const
+void RenderPass::renderBar(int round, float roundingPower) const
 {
     TRACE;
+    auto const win = m_bar->m_window.lock();
+    auto const mon = g_pHyprOpenGL->m_renderData.pMonitor.lock();
+
+    // Calculate the bar rect in render space.
+    auto const bar_rect = m_bar->getAssignedBoxInGlobalSpace()
+                              .translate(-mon->m_position)
+                              .translate(win->m_floatingOffset)
+                              .expand(1.0)
+                              .scale(mon->m_scale)
+                              .round();
+
+    auto const bar_and_window_rect =
+        [&]() {
+            auto box = m_bar->getAssignedBoxInGlobalSpace();
+            box.height += win->getWindowMainSurfaceBox().height;
+            return box;
+        }()
+            .translate(-mon->m_position)
+            .translate(win->m_floatingOffset)
+            .expand(1.0)
+            .scale(mon->m_scale)
+            .round();
+
+    // Render bar background.
     g_pHyprOpenGL->renderRect(
-        rect.copy(),
+        bar_and_window_rect,
         g_plugin->config().bar.fill_color(),
         round,
         roundingPower);
+
+    // Render bar text.
+    auto const& barcfg = g_plugin->config().bar;
+    if (barcfg.text_enabled()) {
+        auto const text_texture = g_pHyprOpenGL->renderText(
+            win->m_title,
+            barcfg.text_color(),
+            barcfg.text_size_pts());
+        CBox const text_rect = CBox{bar_rect.pos(), text_texture->m_size}
+                                   .translate(bar_rect.size() / 2.0)
+                                   .translate(text_texture->m_size / -2.0)
+                                   .round();
+        g_pHyprOpenGL->renderTexture(text_texture, text_rect, 1.0);
+    }
 }
 
 void RenderPass::renderButton(
@@ -101,24 +138,19 @@ void RenderPass::draw(CRegion const&)
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     // Calculate the bar rect in render space.
-    auto const barrect =
-        [&]() {
-            auto box = m_bar->getAssignedBoxInGlobalSpace();
-            box.height += win->getWindowMainSurfaceBox().height;
-            return box;
-        }()
-            .translate(-mon->m_position)
-            .translate(win->m_floatingOffset)
-            .expand(1.0)
-            .scale(mon->m_scale)
-            .round();
+    auto const bar_topleft = m_bar->getAssignedBoxInGlobalSpace()
+                                 .translate(-mon->m_position)
+                                 .translate(win->m_floatingOffset)
+                                 .scale(mon->m_scale)
+                                 .round()
+                                 .pos();
 
     // Draw the bar.
-    renderBar(barrect, rounding, win->roundingPower());
+    renderBar(rounding, win->roundingPower());
 
     // Draw the buttons.
     for (auto const& btn : m_bar->m_btnmgr.buttons()) {
-        renderButton(btn, barrect.pos(), scale_factor);
+        renderButton(btn, bar_topleft, scale_factor);
     }
 
     glStencilMask(0xff);

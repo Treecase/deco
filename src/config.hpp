@@ -18,10 +18,16 @@ namespace config {
             Bar(Plugin const&);
             int height() const;
             CHyprColor fill_color() const;
+            bool text_enabled() const;
+            CHyprColor text_color() const;
+            int text_size_pts() const;
 
         private:
             Hyprlang::INT *const *const m_height;
             Hyprlang::INT *const *const m_fillcolor;
+            Hyprlang::INT *const *const m_textenable;
+            Hyprlang::INT *const *const m_textcolor;
+            Hyprlang::INT *const *const m_textsize;
         };
 
         class Buttons {

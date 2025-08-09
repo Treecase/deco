@@ -28,6 +28,12 @@ Config::Bar::Bar(Plugin const& plugin)
       plugin.getConfigValue("bar:height"))}
 , m_fillcolor{reinterpret_cast<Hyprlang::INT *const *>(
       plugin.getConfigValue("bar:fill_color"))}
+, m_textenable{reinterpret_cast<Hyprlang::INT *const *>(
+      plugin.getConfigValue("bar:text_enabled"))}
+, m_textcolor{reinterpret_cast<Hyprlang::INT *const *>(
+      plugin.getConfigValue("bar:text_color"))}
+, m_textsize{reinterpret_cast<Hyprlang::INT *const *>(
+      plugin.getConfigValue("bar:text_size"))}
 {
     TRACE;
 }
@@ -40,6 +46,21 @@ int Config::Bar::height() const
 CHyprColor Config::Bar::fill_color() const
 {
     return **m_fillcolor;
+}
+
+bool Config::Bar::text_enabled() const
+{
+    return **m_textenable;
+}
+
+CHyprColor Config::Bar::text_color() const
+{
+    return **m_textcolor;
+}
+
+int Config::Bar::text_size_pts() const
+{
+    return std::max(Hyprlang::INT{0}, **m_textsize);
 }
 
 // Config::Buttons ////////////////////////////////////////////////////////////

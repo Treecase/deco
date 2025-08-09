@@ -22,7 +22,7 @@ public:
 private:
     Bar const *m_bar;
 
-    void renderBar(CBox const&, int, float) const;
+    void renderBar(int, float) const;
     void renderButton(deco::ButtonInstance const&, Vector2D const&, float)
         const;
 };

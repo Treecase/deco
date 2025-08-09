@@ -46,6 +46,9 @@ Plugin::Plugin(HANDLE handle)
 
     addConfigValue("bar:height", Hyprlang::INT{32});
     addConfigValue("bar:fill_color", Hyprlang::INT{0xff11111b});
+    addConfigValue("bar:text_enabled", Hyprlang::INT{1});
+    addConfigValue("bar:text_color", Hyprlang::INT{0xffcdd6f4});
+    addConfigValue("bar:text_size", Hyprlang::INT{12});
     addConfigValue("buttons:side", Hyprlang::STRING{"right"});
     addConfigValue("buttons:spacing", Hyprlang::INT{8});
     addConfigValue("buttons:padding", Hyprlang::INT{8});
