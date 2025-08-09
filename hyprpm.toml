@@ -2,6 +2,11 @@
 name = "deco"
 authors = ["Treecase"]
 commit_pins = [
+    # Hyprland v0.50.1
+    [
+        "4e242d086e20b32951fdc0ebcbfb4d41b5be8dcc",
+        "c72b9d804d02da9717f464f3c2f08d374e69db9b",
+    ],
     # Hyprland v0.50
     [
         "c4a4c341568944bd4fb9cd503558b2de602c0213",
