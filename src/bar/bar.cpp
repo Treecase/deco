@@ -128,6 +128,22 @@ bool Bar::isEventValid() const
         && m_window != g_pCompositor->m_lastWindow) {
         return false;
     }
+    std::vector layers{
+        std::from_range,
+        g_pCompositor->m_layers
+            | std::views::transform(
+                [](PHLLS layer) -> PHLLSREF { return PHLLSREF{layer}; })};
+    Vector2D _coords{};
+    PHLLS _layerSurface{};
+    auto const layer = g_pCompositor->vectorToLayerSurface(
+        g_pInputManager->getMouseCoordsInternal(),
+        &layers,
+        &_coords,
+        &_layerSurface);
+    if (layer) {
+        deco::log("mouse is over a layer surface");
+        return false;
+    }
     return true;
 }
 
