@@ -9,7 +9,10 @@ class Plugin;
 
 namespace config {
 
-    enum class Side { LEFT, RIGHT };
+    enum class Side {
+        LEFT,
+        RIGHT
+    };
 
     class Config {
     public:

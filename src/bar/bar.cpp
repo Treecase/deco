@@ -3,6 +3,7 @@
 #include <wayland-server-protocol.h>
 
 #include <any>
+#include <charconv>
 #include <functional>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/Window.hpp>
@@ -274,14 +275,27 @@ void Bar::onWindowUpdateRules(void *, SCallbackInfo&, std::any data)
     if (bar_win != window) {
         return;
     }
-    auto const it = std::ranges::find_if(
-        bar_win->m_matchedRules,
-        [](auto rule) { return rule->m_rule == "plugin:deco:nobar"; });
-    auto const matched = it != bar_win->m_matchedRules.end();
-    if (matched) {
-        deco::log("{} matched rule plugin:deco:nobar", window);
+    m_rule_hide = false;
+    m_rule_height = std::nullopt;
+    for (auto const& rule : bar_win->m_matchedRules) {
+        if (rule->m_rule.starts_with("plugin:deco:nobar")) {
+            deco::log("{} matched rule plugin:deco:nobar", window);
+            m_rule_hide = true;
+        }
+        if (rule->m_rule.starts_with("plugin:deco:height")) {
+            deco::log("{} matched rule plugin:deco:height", window);
+            auto const sep = rule->m_rule.find(' ');
+            auto const value = rule->m_rule.substr(sep + 1);
+            int height = 0;
+            auto const result = std::from_chars(
+                value.cbegin().base(),
+                value.cend().base(),
+                height);
+            if (result) {
+                m_rule_height = std::make_optional(height);
+            }
+        }
     }
-    m_rule_hide = matched;
     g_pDecorationPositioner->repositionDeco(this);
     bar_win->updateWindowDecos();
 }

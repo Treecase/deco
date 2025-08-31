@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(deco
     DESCRIPTION "Window bars for Hyprland."
-    VERSION "0.6.3"
+    VERSION "0.6.4"
     LANGUAGES CXX
 )
 

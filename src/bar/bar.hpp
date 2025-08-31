@@ -64,6 +64,7 @@ private:
     std::optional<Drag> m_drag{};
     bool m_manual_hide{false};
     bool m_rule_hide{false};
+    std::optional<int> m_rule_height{std::nullopt};
     ButtonManager m_btnmgr;
 
     Vector2D m_mouse_pos{};

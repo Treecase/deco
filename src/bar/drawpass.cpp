@@ -66,11 +66,20 @@ void RenderPass::renderBar(int round, float roundingPower) const
             win->m_title,
             barcfg.text_color(),
             barcfg.text_size_pts());
-        CBox const text_rect = CBox{bar_rect.pos(), text_texture->m_size}
-                                   .translate(bar_rect.size() / 2.0)
-                                   .translate(text_texture->m_size / -2.0)
-                                   .round();
+        auto text_rect = CBox{bar_rect.pos(), text_texture->m_size}
+                             .translate(bar_rect.size() / 2.0)
+                             .translate(text_texture->m_size / -2.0)
+                             .round();
+        text_rect.x = std::max(
+            text_rect.x,
+            bar_rect.x + g_plugin->config().buttons.padding());
+        g_pHyprOpenGL->scissor(
+            text_rect.x,
+            text_rect.y,
+            text_rect.width / 2.0,
+            text_rect.height);
         g_pHyprOpenGL->renderTexture(text_texture, text_rect, 1.0);
+        g_pHyprOpenGL->scissor(nullptr);
     }
 }
 

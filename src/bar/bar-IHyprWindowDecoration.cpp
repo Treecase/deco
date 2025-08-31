@@ -19,7 +19,9 @@ SDecorationPositioningInfo Bar::getPositioningInfo()
     // Border priority is hardcoded in
     // hyprland/src/render/decorations/CHyprBorderDecoration.cpp.
     static constexpr uint32_t HYPRLAND_BORDER_PRIORITY = 10000;
-    double const height = isHidden() ? 0 : g_plugin->config().bar.height();
+    double const height = isHidden()
+        ? 0
+        : m_rule_height.value_or(g_plugin->config().bar.height());
     return {
         .policy = DECORATION_POSITION_STICKY,
         .edges = DECORATION_EDGE_TOP,
