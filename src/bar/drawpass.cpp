@@ -56,8 +56,7 @@ void RenderPass::renderBar(int round, float roundingPower) const
     g_pHyprOpenGL->renderRect(
         bar_and_window_rect,
         g_plugin->config().bar.fill_color(),
-        round,
-        roundingPower);
+        {.round = round, .roundingPower = roundingPower});
 
     // Render bar text.
     auto const& barcfg = g_plugin->config().bar;
@@ -78,7 +77,7 @@ void RenderPass::renderBar(int round, float roundingPower) const
             text_rect.y,
             text_rect.width / 2.0,
             text_rect.height);
-        g_pHyprOpenGL->renderTexture(text_texture, text_rect, 1.0);
+        g_pHyprOpenGL->renderTexture(text_texture, text_rect, {});
         g_pHyprOpenGL->scissor(nullptr);
     }
 }
@@ -92,7 +91,7 @@ void RenderPass::renderButton(
     CHyprColor const color = button.model().colorFor(button.state());
     auto const box = button.box().scale(scale_factor).translate(origin).round();
     int const round = button.model().size().x * 0.5 * scale_factor;
-    g_pHyprOpenGL->renderRect(box, color, round);
+    g_pHyprOpenGL->renderRect(box, color, {.round = round});
 }
 
 // IPassElement Overrides
@@ -137,8 +136,8 @@ void RenderPass::draw(CRegion const&)
     g_pHyprOpenGL->renderRect(
         window_rect.round(),
         CHyprColor{},
-        rounding,
-        win->roundingPower());
+        {.round = static_cast<int>(rounding),
+         .roundingPower = win->roundingPower()});
 
     // Now the bar won't draw behind the window contents.
     glStencilFunc(GL_NOTEQUAL, 1, 0xff);
