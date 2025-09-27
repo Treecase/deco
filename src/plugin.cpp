@@ -52,6 +52,7 @@ Plugin::Plugin(HANDLE handle)
     addConfigValue("buttons:side", Hyprlang::STRING{"right"});
     addConfigValue("buttons:spacing", Hyprlang::INT{8});
     addConfigValue("buttons:padding", Hyprlang::INT{8});
+    addConfigValue("buttons:diameter", Hyprlang::INT{22});
 
     HyprlandAPI::addDispatcherV2(
         m_handle,

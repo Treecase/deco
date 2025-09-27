@@ -39,11 +39,13 @@ namespace config {
             Side side() const;
             int spacing() const;
             int padding() const;
+            int diameter() const;
 
         private:
             Hyprlang::STRING const *const m_side;
             Hyprlang::INT *const *const m_spacing;
             Hyprlang::INT *const *const m_padding;
+            Hyprlang::INT *const *const m_diameter;
         };
 
         Config(Plugin const&);

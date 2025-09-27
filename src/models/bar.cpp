@@ -34,7 +34,7 @@ Hyprlang::CParseResult deco::addButton(char const *, char const *args)
     if (it == vars.end()) {
         throw std::runtime_error{"invalid addButton args"};
     }
-    auto const diameter = configStringToInt(*it++);
+    auto const diameter = g_plugin->config().buttons.diameter();
     if (it == vars.end()) {
         throw std::runtime_error{"invalid addButton args"};
     }
@@ -54,7 +54,7 @@ Hyprlang::CParseResult deco::addButton(char const *, char const *args)
 
     ButtonModel const button{
         action,
-        diameter.value_or(16),
+        diameter,
         static_cast<uint64_t>(normal.value_or(0xff45475a)),
         static_cast<uint64_t>(hovered.value_or(0xff585b70)),
         static_cast<uint64_t>(clicked.value_or(0xff313244))};

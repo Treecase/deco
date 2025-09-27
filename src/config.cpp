@@ -72,6 +72,8 @@ Config::Buttons::Buttons(Plugin const& plugin)
       plugin.getConfigValue("buttons:spacing"))}
 , m_padding{reinterpret_cast<Hyprlang::INT *const *>(
       plugin.getConfigValue("buttons:padding"))}
+, m_diameter{reinterpret_cast<Hyprlang::INT *const *>(
+      plugin.getConfigValue("buttons:diameter"))}
 {
     TRACE;
 }
@@ -93,4 +95,9 @@ int Config::Buttons::spacing() const
 int Config::Buttons::padding() const
 {
     return **m_padding;
+}
+
+int Config::Buttons::diameter() const
+{
+    return **m_diameter;
 }
