@@ -13,7 +13,6 @@ add_library(deco SHARED
     src/bar/bar.cpp
     src/bar/buttonmanager.cpp
     src/bar/drawpass.cpp
-    src/bar/positioner.cpp
 
     src/models/bar.cpp
     src/models/button.cpp

@@ -2,9 +2,9 @@
 
 #include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
+#include <optional>
 #include <vector>
 
-#include "bar/positioner.hpp"
 #include "models/button.hpp"
 #include "widgets/button.hpp"
 
@@ -14,7 +14,7 @@ public:
 
     explicit ButtonManager(CBox const&);
 
-    deco::ButtonInstance *getButtonAt(Vector2D const&);
+    std::optional<deco::ButtonInstance *> getButtonAt(Vector2D const&);
 
     std::vector<deco::ButtonInstance>& buttons() { return m_buttons; }
 
@@ -28,6 +28,7 @@ public:
 
 private:
     CBox m_box;
-    Positioner m_positioner;
     std::vector<deco::ButtonInstance> m_buttons{};
+
+    void updateLayout();
 };

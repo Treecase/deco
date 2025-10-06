@@ -23,12 +23,11 @@ public:
     // IHyprWindowDecoration //////////////////////////////////////////////////
     virtual SDecorationPositioningInfo getPositioningInfo() override;
     virtual void onPositioningReply(
-        SDecorationPositioningReply const& reply) override;
-    virtual void draw(PHLMONITOR, float const& a) override;
+        SDecorationPositioningReply const&) override;
+    virtual void draw(PHLMONITOR, float const&) override;
     virtual eDecorationType getDecorationType() override;
     virtual void updateWindow(PHLWINDOW) override;
-    virtual void damageEntire()
-        override; // should be ignored by non-absolute decos
+    virtual void damageEntire() override;
     virtual bool onInputOnDeco(eInputType const, Vector2D const&, std::any = {})
         override;
     virtual eDecorationLayer getDecorationLayer() override;
@@ -36,7 +35,7 @@ public:
     virtual std::string getDisplayName() override;
     // IHyprWindowDecoration //////////////////////////////////////////////////
 
-    void hide(bool hide = true);
+    void hide(bool = true);
     bool isHidden() const;
     bool isHiddenManual() const;
     bool isHiddenRule() const;
@@ -49,7 +48,7 @@ public:
     bool isEventValid() const;
 
     Vector2D getMouseRelative() const;
-    Vector2D getGlobalPointRelative(Vector2D const& point) const;
+    Vector2D getGlobalPointRelative(Vector2D const&) const;
     double getCenterline() const;
 
 private:

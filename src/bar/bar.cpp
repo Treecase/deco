@@ -197,11 +197,10 @@ void Bar::onMouseButton(void *, SCallbackInfo&, std::any data)
         && isEventValid();
 
     if (pointer_is_inside_bar) {
-        auto btn = m_btnmgr.getButtonAt(pointer);
-        if (btn != nullptr) {
+        if (auto btn = m_btnmgr.getButtonAt(pointer)) {
             // A button was clicked
-            btn->setState(State::CLICKED);
-            deco::log("Clicked button {}", btn->name());
+            (*btn)->setState(State::CLICKED);
+            deco::log("Clicked button {}", (*btn)->name());
             damageEntire();
         } else {
             // Click on the bar itself
@@ -244,16 +243,15 @@ void Bar::onMouseMove(void *, SCallbackInfo&, std::any data)
     m_mouse_pos = std::any_cast<Vector2D>(data);
 
     auto const pointer = getGlobalPointRelative(m_mouse_pos);
-    auto btn = m_btnmgr.getButtonAt(pointer);
 
     if (m_drag.has_value()) {
         // Window is being dragged
         g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
-    } else if (btn != nullptr) {
+    } else if (auto btn = m_btnmgr.getButtonAt(pointer)) {
         // Mouse is over a button
-        deco::log("Hovered button {}", btn->name());
-        if (btn->state() != State::CLICKED) {
-            btn->setState(State::HOVERED);
+        deco::log("Hovered button {}", (*btn)->name());
+        if ((*btn)->state() != State::CLICKED) {
+            (*btn)->setState(State::HOVERED);
         }
         damageEntire();
     } else {
