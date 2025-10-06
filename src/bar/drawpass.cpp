@@ -13,9 +13,9 @@
 #include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
-#include "include.hpp"
 #include "log.hpp"
 #include "models/button.hpp"
+#include "plugin.hpp"
 #include "widgets/button.hpp"
 
 using deco::ButtonInstance;

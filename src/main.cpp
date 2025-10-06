@@ -11,8 +11,8 @@
 #include <string>
 
 #include "defines.hpp"
-#include "include.hpp"
 #include "log.hpp"
+#include "plugin.hpp"
 
 // Declared in include.hpp
 UP<deco::Plugin> deco::g_plugin{nullptr};

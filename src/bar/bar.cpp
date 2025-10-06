@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "bar/buttonmanager.hpp"
-#include "include.hpp"
-#include "input.hpp"
+#include "defines.hpp"
 #include "log.hpp"
+#include "plugin.hpp"
 #include "widgets/button.hpp"
 
 using deco::bar::Bar;

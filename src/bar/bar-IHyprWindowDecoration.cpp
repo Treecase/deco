@@ -8,7 +8,7 @@
 
 #include "bar/bar.hpp"
 #include "bar/drawpass.hpp"
-#include "include.hpp"
+#include "plugin.hpp"
 
 using namespace deco::bar;
 

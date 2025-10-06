@@ -8,9 +8,9 @@
 #include <vector>
 
 #include "config.hpp"
-#include "include.hpp"
 #include "log.hpp"
 #include "models/bar.hpp"
+#include "plugin.hpp"
 #include "widgets/button.hpp"
 
 using deco::config::Side;
