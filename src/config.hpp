@@ -4,55 +4,33 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprlang.hpp>
 
-namespace deco {
-class Plugin;
+#define CFGVAL(Ns, Name, Type, Default)                    \
+    namespace Ns {                                         \
+    struct Name {                                          \
+        using type = Type;                                 \
+        static type constexpr DEFAULT = Default;           \
+        static constexpr char const *NAME = #Ns ":" #Name; \
+    };                                                     \
+    }
 
-namespace config {
+namespace deco::config {
 
-    enum class Side {
-        LEFT,
-        RIGHT
-    };
+enum Side : Hyprlang::INT {
+    LEFT = 0,
+    RIGHT = 1
+};
 
-    class Config {
-    public:
-        class Bar {
-        public:
-            Bar(Plugin const&);
-            int height() const;
-            CHyprColor fill_color() const;
-            bool text_enabled() const;
-            CHyprColor text_color() const;
-            int text_size_pts() const;
+CFGVAL(bar, height, Hyprlang::INT, 32)
+CFGVAL(bar, fill_color, Hyprlang::INT, 0xff11111b)
+CFGVAL(bar, text_enabled, Hyprlang::INT, 1)
+CFGVAL(bar, text_color, Hyprlang::INT, 0xffcdd6f4)
+CFGVAL(bar, text_size, Hyprlang::INT, 12)
 
-        private:
-            Hyprlang::INT *const *const m_height;
-            Hyprlang::INT *const *const m_fillcolor;
-            Hyprlang::INT *const *const m_textenable;
-            Hyprlang::INT *const *const m_textcolor;
-            Hyprlang::INT *const *const m_textsize;
-        };
+CFGVAL(buttons, side, Hyprlang::INT, Side::RIGHT)
+CFGVAL(buttons, spacing, Hyprlang::INT, 8)
+CFGVAL(buttons, padding, Hyprlang::INT, 8)
+CFGVAL(buttons, diameter, Hyprlang::INT, 22)
 
-        class Buttons {
-        public:
-            Buttons(Plugin const&);
-            Side side() const;
-            int spacing() const;
-            int padding() const;
-            int diameter() const;
+} // namespace deco::config
 
-        private:
-            Hyprlang::STRING const *const m_side;
-            Hyprlang::INT *const *const m_spacing;
-            Hyprlang::INT *const *const m_padding;
-            Hyprlang::INT *const *const m_diameter;
-        };
-
-        Config(Plugin const&);
-
-        Bar const bar;
-        Buttons const buttons;
-    };
-
-} // namespace config
-} // namespace deco
+#undef CFGVAL

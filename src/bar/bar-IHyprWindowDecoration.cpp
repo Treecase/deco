@@ -8,6 +8,7 @@
 
 #include "bar/bar.hpp"
 #include "bar/drawpass.hpp"
+#include "config.hpp"
 #include "plugin.hpp"
 
 using namespace deco::bar;
@@ -21,7 +22,7 @@ SDecorationPositioningInfo Bar::getPositioningInfo()
     static constexpr uint32_t HYPRLAND_BORDER_PRIORITY = 10000;
     double const height = isHidden()
         ? 0
-        : m_rule_height.value_or(g_plugin->config().bar.height());
+        : m_rule_height.value_or(g_plugin->configValue<config::bar::height>());
     return {
         .policy = DECORATION_POSITION_STICKY,
         .edges = DECORATION_EDGE_TOP,

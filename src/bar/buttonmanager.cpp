@@ -13,13 +13,14 @@
 #include "plugin.hpp"
 #include "widgets/button.hpp"
 
+using deco::g_plugin;
 using deco::config::Side;
 
 ButtonManager ButtonManager::newFromConfig(CBox const& box)
 {
     TRACE;
     ButtonManager btnmgr{box};
-    for (auto const& btn : deco::g_plugin->barModel().buttons()) {
+    for (auto const& btn : g_plugin->barModel().buttons()) {
         btnmgr.addButton(btn);
     }
     return btnmgr;
@@ -59,10 +60,13 @@ void ButtonManager::resize(CBox const& box)
 
 void ButtonManager::updateLayout()
 {
-    int const BUTTON_SIZE = deco::g_plugin->config().buttons.diameter();
-    int const PADDING = deco::g_plugin->config().buttons.padding();
-    int const SPACING = deco::g_plugin->config().buttons.spacing();
-    Side const SIDE = deco::g_plugin->config().buttons.side();
+    auto const BUTTON_SIZE =
+        g_plugin->configValue<deco::config::buttons::diameter>();
+    auto const PADDING =
+        g_plugin->configValue<deco::config::buttons::padding>();
+    auto const SPACING =
+        g_plugin->configValue<deco::config::buttons::spacing>();
+    auto const SIDE = g_plugin->configValue<deco::config::buttons::side>();
 
     double const y = 0.5 * (m_box.height - BUTTON_SIZE);
     for (auto [i, btn] : std::views::enumerate(m_buttons)) {

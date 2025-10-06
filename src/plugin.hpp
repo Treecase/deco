@@ -9,7 +9,6 @@
 #include <hyprlang.hpp>
 #include <string>
 
-#include "config.hpp"
 #include "models/bar.hpp"
 
 namespace deco {
@@ -20,7 +19,6 @@ public:
     void init();
 
     BarModel& barModel();
-    config::Config const& config();
 
     void notify(
         std::string const& text,
@@ -43,9 +41,21 @@ public:
 
     void *const *getConfigValue(std::string const& name) const;
 
+    template<class V>
+    void addConfigValue()
+    {
+        addConfigValue(V::NAME, V::DEFAULT);
+    }
+
+    // WARNING: Doesn't work for Hyprlang::STRINGs
+    template<class V>
+    V::type configValue()
+    {
+        return **reinterpret_cast<V::type *const *>(getConfigValue(V::NAME));
+    }
+
 private:
     HANDLE const m_handle;
-    UP<config::Config> m_config{nullptr};
     UP<BarModel> m_barModel{nullptr};
 
     SP<HOOK_CALLBACK_FN> ptr_openWindow{nullptr};

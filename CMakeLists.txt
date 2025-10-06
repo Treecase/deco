@@ -19,7 +19,6 @@ add_library(deco SHARED
 
     src/widgets/button.cpp
 
-    src/config.cpp
     src/main.cpp
     src/plugin.cpp
 )

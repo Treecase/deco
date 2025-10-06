@@ -13,6 +13,7 @@
 #include <hyprutils/math/Box.hpp>
 #include <hyprutils/math/Vector2D.hpp>
 
+#include "config.hpp"
 #include "log.hpp"
 #include "models/button.hpp"
 #include "plugin.hpp"
@@ -55,23 +56,24 @@ void RenderPass::renderBar(int round, float roundingPower) const
     // Render bar background.
     g_pHyprOpenGL->renderRect(
         bar_and_window_rect,
-        g_plugin->config().bar.fill_color(),
+        g_plugin->configValue<config::bar::fill_color>(),
         {.round = round, .roundingPower = roundingPower});
 
     // Render bar text.
-    auto const& barcfg = g_plugin->config().bar;
-    if (barcfg.text_enabled()) {
-        auto const text_texture = g_pHyprOpenGL->renderText(
-            win->m_title,
-            barcfg.text_color(),
-            barcfg.text_size_pts());
+    auto const TEXT_ENABLED =
+        g_plugin->configValue<config::bar::text_enabled>();
+    if (TEXT_ENABLED) {
+        auto const TEXT_COLOR =
+            g_plugin->configValue<config::bar::text_color>();
+        auto const TEXT_SIZE = g_plugin->configValue<config::bar::text_size>();
+        auto const PADDING = g_plugin->configValue<config::buttons::padding>();
+        auto const text_texture =
+            g_pHyprOpenGL->renderText(win->m_title, TEXT_COLOR, TEXT_SIZE);
         auto text_rect = CBox{bar_rect.pos(), text_texture->m_size}
                              .translate(bar_rect.size() / 2.0)
                              .translate(text_texture->m_size / -2.0)
                              .round();
-        text_rect.x = std::max(
-            text_rect.x,
-            bar_rect.x + g_plugin->config().buttons.padding());
+        text_rect.x = std::max(text_rect.x, bar_rect.x + PADDING);
         g_pHyprOpenGL->scissor(
             text_rect.x,
             text_rect.y,

@@ -14,8 +14,10 @@
 #include "log.hpp"
 #include "plugin.hpp"
 
-// Declared in include.hpp
+// Declared in plugin.hpp
 UP<deco::Plugin> deco::g_plugin{nullptr};
+
+using deco::g_plugin;
 
 // WARNING: Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION()
@@ -32,10 +34,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     TRACE;
 
     deco::log("Initializing...");
-    deco::g_plugin = makeUnique<deco::Plugin>(handle);
-    deco::g_plugin->init();
+    g_plugin = makeUnique<deco::Plugin>(handle);
+    g_plugin->init();
     deco::log("Initialization complete");
-    deco::g_plugin->notify("Initialized successfully.", ICON_OK);
+    g_plugin->notify("Initialized successfully.", ICON_OK);
 
     return {
         .name = "deco",
@@ -47,5 +49,5 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 APICALL EXPORT void PLUGIN_EXIT()
 {
     TRACE;
-    deco::g_plugin.reset();
+    g_plugin.reset();
 }

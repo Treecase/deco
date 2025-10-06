@@ -24,7 +24,6 @@
 using deco::BarModel;
 using deco::Plugin;
 using deco::bar::Bar;
-using deco::config::Config;
 
 Plugin::Plugin(HANDLE handle)
 : m_handle{handle}
@@ -38,21 +37,21 @@ Plugin::Plugin(HANDLE handle)
     // from mismatched header versions.
     std::string const HASH = __hyprland_api_get_hash();
     if (HASH != GIT_COMMIT_HASH) {
-        notify("[deco] Mismatched headers! Can't proceed.", ICON_ERROR);
+        notify("Mismatched headers! Can't proceed.", ICON_ERROR);
         throw std::runtime_error("[deco] Version mismatch");
     }
 
     deco::log("Initializing config values");
 
-    addConfigValue("bar:height", Hyprlang::INT{32});
-    addConfigValue("bar:fill_color", Hyprlang::INT{0xff11111b});
-    addConfigValue("bar:text_enabled", Hyprlang::INT{1});
-    addConfigValue("bar:text_color", Hyprlang::INT{0xffcdd6f4});
-    addConfigValue("bar:text_size", Hyprlang::INT{12});
-    addConfigValue("buttons:side", Hyprlang::STRING{"right"});
-    addConfigValue("buttons:spacing", Hyprlang::INT{8});
-    addConfigValue("buttons:padding", Hyprlang::INT{8});
-    addConfigValue("buttons:diameter", Hyprlang::INT{22});
+    addConfigValue<config::bar::height>();
+    addConfigValue<config::bar::fill_color>();
+    addConfigValue<config::bar::text_enabled>();
+    addConfigValue<config::bar::text_color>();
+    addConfigValue<config::bar::text_size>();
+    addConfigValue<config::buttons::side>();
+    addConfigValue<config::buttons::spacing>();
+    addConfigValue<config::buttons::padding>();
+    addConfigValue<config::buttons::diameter>();
 
     HyprlandAPI::addDispatcherV2(
         m_handle,
@@ -67,7 +66,6 @@ void Plugin::init()
     TRACE;
 
     m_barModel = makeUnique<BarModel>(*this);
-    m_config = makeUnique<Config>(*this);
 
     ptr_openWindow =
         addCallback("openWindow", std::bind_front(&Plugin::onOpenWindow, this));
@@ -82,11 +80,6 @@ void Plugin::init()
 BarModel& Plugin::barModel()
 {
     return *m_barModel;
-}
-
-Config const& Plugin::config()
-{
-    return *m_config;
 }
 
 void Plugin::notify(
