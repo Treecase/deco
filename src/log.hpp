@@ -1,7 +1,9 @@
 #pragma once
 
+#include <format>
 #include <hyprland/src/debug/Log.hpp>
 #include <source_location>
+#include <stdexcept>
 
 namespace deco {
 
@@ -44,5 +46,23 @@ inline static void err(std::format_string<Args...> const& str, Args... args)
         auto const here = std::source_location::current(); \
         ::deco::trace("{}", here.function_name());         \
     }
+
+template<class... Args>
+[[noreturn]]
+inline static void panic(std::format_string<Args...> const& fmt, Args... args)
+{
+    throw std::runtime_error{std::format(
+        "[deco] {}",
+        std::vformat(fmt.get(), std::make_format_args(args...)))};
+}
+
+template<class Ptr, class... Args>
+inline static void
+panic_if_null(Ptr ptr, std::format_string<Args...> const& fmt, Args... args)
+{
+    if (ptr == nullptr) {
+        panic(fmt, args...);
+    }
+}
 
 } // namespace deco

@@ -29,16 +29,14 @@ Plugin::Plugin(HANDLE handle)
 : m_handle{handle}
 {
     TRACE;
-    if (m_handle == nullptr) {
-        throw std::runtime_error{"[deco] Handle must not be NULL"};
-    }
+    panic_if_null(m_handle, "Handle must not be NULL");
 
     // ALWAYS add this to your plugins. It will prevent random crashes coming
     // from mismatched header versions.
     std::string const HASH = __hyprland_api_get_hash();
     if (HASH != GIT_COMMIT_HASH) {
         notify("Mismatched headers! Can't proceed.", ICON_ERROR);
-        throw std::runtime_error("[deco] Version mismatch");
+        panic("Version mismatch");
     }
 
     deco::log("Initializing config values");
@@ -106,19 +104,12 @@ SP<HOOK_CALLBACK_FN> Plugin::addCallback(
     HOOK_CALLBACK_FN callback)
 {
     TRACE;
-    RASSERT(m_handle, "null handle");
-    RASSERT(callback, "null callback");
+    panic_if_null(callback, "null callback");
     deco::log("Adding event callback for \"{}\"", event);
     auto const ptr =
         HyprlandAPI::registerCallbackDynamic(m_handle, event, callback);
-    if (!ptr) {
-        throw std::runtime_error(
-            std::format(
-                "[deco] Callback registration for \"{}\" event failed",
-                event));
-    } else {
-        return ptr;
-    }
+    panic_if_null(ptr, "Callback registration for \"{}\" event failed", event);
+    return ptr;
 }
 
 void Plugin::addConfigKeyword(
@@ -134,8 +125,7 @@ void Plugin::addConfigKeyword(
     if (success) {
         deco::log("Added keyword \"{}\"", keyword);
     } else {
-        throw std::runtime_error{
-            std::format("Failed to add keyword \"{}\"", keyword)};
+        panic("Failed to add keyword \"{}\"", keyword);
     }
 }
 
@@ -149,8 +139,7 @@ void Plugin::addConfigValue(
     if (success) {
         deco::log("Added config value \"{}\"", key);
     } else {
-        throw std::runtime_error{
-            std::format("Failed to add config value \"{}\"", key)};
+        panic("Failed to add config value \"{}\"", key);
     }
 }
 
@@ -159,15 +148,9 @@ void *const *Plugin::getConfigValue(std::string const& name) const
     TRACE;
     auto const key = "plugin:deco:" + name;
     auto const cfgval = HyprlandAPI::getConfigValue(m_handle, key);
-    if (cfgval == nullptr) {
-        throw std::runtime_error{
-            std::format("Failed to get config value \"{}\"", key)};
-    }
+    panic_if_null(cfgval, "Failed to get config value \"{}\"", key);
     auto const ptr = cfgval->getDataStaticPtr();
-    if (ptr == nullptr) {
-        throw std::runtime_error{
-            std::format("Failed to get static pointer for \"{}\"", key)};
-    }
+    panic_if_null(ptr, "Failed to get static pointer for \"{}\"", key);
     return ptr;
 }
 

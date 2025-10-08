@@ -59,5 +59,5 @@ CHyprColor const& ButtonModel::colorFor(ButtonState const& state) const
     case ButtonState::CLICKED:
         return m_clicked;
     }
-    throw std::logic_error{"invalid ButtonState"};
+    panic("invalid ButtonState");
 }

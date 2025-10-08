@@ -8,9 +8,15 @@
 #include <hyprutils/math/Vector2D.hpp>
 #include <string>
 
+#include "log.hpp"
+
 namespace deco {
 
-enum class ButtonState { NORMAL, HOVERED, CLICKED };
+enum class ButtonState {
+    NORMAL,
+    HOVERED,
+    CLICKED
+};
 
 class ButtonModel {
 public:
@@ -63,7 +69,7 @@ struct std::formatter<deco::ButtonModel> {
     {
         auto it = ctx.begin();
         if (it != ctx.end() && *it != '}') {
-            throw std::format_error("Invalid format args for ButtonModel.");
+            deco::panic("Invalid format args for ButtonModel.");
         } else {
             return it;
         }
